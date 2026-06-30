@@ -1,0 +1,78 @@
+.adminLogin {
+  background: rgba(20, 20, 20, 0.96);
+  border: 1px solid #2b2b2b;
+  border-radius: 30px;
+  padding: 28px;
+  display: grid;
+  gap: 14px;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.35);
+}
+
+.adminLogin b {
+  font-size: 28px;
+  color: white;
+}
+
+.adminLogin span {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.adminLogin input {
+  width: 100%;
+  background: #050505;
+  color: white;
+  border: 2px solid #333;
+  border-radius: 18px;
+  padding: 14px 16px;
+  font-weight: 800;
+  outline: none;
+}
+
+.adminLogin input:focus {
+  border-color: var(--red);
+}
+
+.adminLogin em {
+  color: var(--red-light);
+  font-style: normal;
+  font-weight: 900;
+}
+
+.adminLogin button {
+  width: fit-content;
+  border: 0;
+  background: var(--red);
+  color: white;
+  border-radius: 999px;
+  padding: 12px 22px;
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.adminGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.adminGrid article {
+  background: rgba(20, 20, 20, 0.96);
+  border: 1px solid #2b2b2b;
+  border-radius: 24px;
+  padding: 20px;
+  display: grid;
+  gap: 6px;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.35);
+}
+
+.adminGrid b {
+  color: white;
+  font-size: 20px;
+}
+
+.adminGrid span {
+  color: var(--muted);
+  font-weight: 700;
+}

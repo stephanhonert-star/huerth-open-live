@@ -1,12 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Header from "./components/Header";
 import Navigation from "./components/Navigation";
 import { matches } from "./data/matches";
 import { players } from "./data/players";
+import Admin from "./pages/Admin";
 import Courts from "./pages/Courts";
 import Gastro from "./pages/Gastro";
 import Home from "./pages/Home";
-import PdfImport from "./pages/PdfImport";
 import Players from "./pages/Players";
 import Schedule from "./pages/Schedule";
 import type { Tab } from "./types";
@@ -21,11 +21,37 @@ import "./styles/gastro.css";
 import "./styles/schedule.css";
 import "./styles/courts.css";
 import "./styles/pdf-import.css";
+import "./styles/admin.css";
 import "./styles/audio-player.css";
 
+function getInitialTab(): Tab {
+  return window.location.hash === "#admin" ? "admin" : "start";
+}
+
 function App() {
-  const [tab, setTab] = useState<Tab>("start");
+  const [tab, setTab] = useState<Tab>(getInitialTab);
   const [club, setClub] = useState("Alle");
+
+  useEffect(() => {
+    function handleHashChange() {
+      if (window.location.hash === "#admin") {
+        setTab("admin");
+      }
+    }
+
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
+
+  function changeTab(nextTab: Tab) {
+    setTab(nextTab);
+
+    if (nextTab === "admin") {
+      window.location.hash = "admin";
+    } else {
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }
 
   const live = matches.filter((match) => match.status === "live");
   const planned = matches.filter((match) => match.status === "planned");
@@ -46,7 +72,7 @@ function App() {
             allMatches={matches}
             done={done}
             players={players}
-            onChangeTab={setTab}
+            onChangeTab={changeTab}
           />
         )}
 
@@ -60,10 +86,10 @@ function App() {
 
         {tab === "gastro" && <Gastro />}
 
-        {tab === "import" && <PdfImport />}
+        {tab === "admin" && <Admin />}
       </main>
 
-      <Navigation activeTab={tab} onChangeTab={setTab} />
+      {tab !== "admin" && <Navigation activeTab={tab} onChangeTab={changeTab} />}
     </div>
   );
 }

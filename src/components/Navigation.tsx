@@ -1,4 +1,4 @@
-import { CalendarDays, FileUp, Home, MapPin, Utensils, Users } from "lucide-react";
+import { CalendarDays, Home, MapPin, Utensils, Users } from "lucide-react";
 import type { Tab } from "../types";
 
 type NavigationProps = {
@@ -32,11 +32,6 @@ function Navigation({ activeTab, onChangeTab }: NavigationProps) {
       <button onClick={() => onChangeTab("gastro")} className={activeTab === "gastro" ? "active" : ""}>
         <Utensils />
         Gastro
-      </button>
-
-      <button onClick={() => onChangeTab("import")} className={activeTab === "import" ? "active" : ""}>
-        <FileUp />
-        Import
       </button>
     </nav>
   );

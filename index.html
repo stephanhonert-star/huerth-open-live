@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hürth Open LIVE</title>
+  <style>
+    :root{--red:#c8103e;--dark:#151b22;--muted:#64748b;--line:#e5e7eb;--bg:#f6f7f9;--green:#22c55e;--amber:#f59e0b}*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:#111827}.app{max-width:1050px;margin:auto;background:white;min-height:100vh}.hero{padding:22px 22px 12px;border-bottom:4px solid var(--red);background:linear-gradient(#fff,#fafafa)}.logoRow{display:flex;align-items:center;gap:20px;flex-wrap:wrap}.logoText{font-weight:900;letter-spacing:-3px;line-height:.82;font-size:clamp(44px,9vw,96px)}.logoText span{color:var(--red)}.event h1{margin:0;color:var(--red);font-size:clamp(22px,4vw,40px);line-height:1.05}.event p{margin:8px 0 0;font-size:18px}.sponsor{margin-top:12px;font-weight:700;color:#2b2f36}.bar{margin:18px 18px 0;background:var(--red);color:white;border-radius:18px;padding:18px;display:flex;justify-content:space-between;align-items:center;gap:10px;box-shadow:0 8px 20px #c8103e33}.tabs{position:sticky;top:0;background:white;z-index:2;display:flex;gap:8px;overflow:auto;padding:12px 14px;border-bottom:1px solid var(--line)}.tab{border:1px solid var(--line);background:white;border-radius:999px;padding:10px 14px;font-weight:800;white-space:nowrap;cursor:pointer}.tab.active{background:var(--dark);color:white}.content{padding:18px}.card{background:white;border:1px solid var(--line);border-radius:20px;box-shadow:0 8px 24px #0000000d;margin-bottom:18px;overflow:hidden}.card.dark{background:linear-gradient(145deg,#111923,#1d2733);color:white;border:0}.cardHead{padding:18px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px;border-bottom:1px solid #e5e7eb}.dark .cardHead{border-bottom:1px solid #ffffff22}.cardHead h2{margin:0;font-size:22px}.sub{color:var(--muted);font-weight:700}.dark .sub{color:#86efac}.match{display:grid;grid-template-columns:130px 1fr 120px;gap:12px;align-items:center;padding:14px 20px;border-top:1px solid #e5e7eb}.dark .match{border-top:1px solid #ffffff1f}.badge{display:inline-block;background:var(--red);color:white;border-radius:9px;padding:5px 9px;font-weight:900;font-size:14px}.players{font-size:20px;font-weight:850}.vs{color:var(--red);font-weight:900;margin:0 10px}.meta{font-size:14px;color:var(--muted);font-weight:700}.dark .meta{color:#d1d5db}.status{font-weight:900;text-align:right}.liveDot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--green);margin-right:6px}.search{width:100%;padding:16px 18px;border:1px solid var(--line);border-radius:16px;font-size:18px}.filters{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}.select,button,input{font:inherit}.select{padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:white}.btn{border:0;border-radius:12px;padding:10px 13px;font-weight:900;cursor:pointer}.btn.red{background:var(--red);color:white}.btn.dark{background:var(--dark);color:white}.btn.light{background:#f1f5f9;color:#111827}.btn.green{background:var(--green);color:white}.btn.amber{background:var(--amber);color:white}.table{width:100%;border-collapse:collapse}.table th,.table td{padding:12px;border-bottom:1px solid var(--line);text-align:left}.adminGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}.adminMatch{border:1px solid var(--line);border-radius:16px;padding:14px;background:#fff}.adminMatch.live{border-color:var(--green);box-shadow:0 0 0 2px #22c55e22}.adminMatch.done{opacity:.75}.adminActions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.modal{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;padding:20px;z-index:9}.modal.show{display:flex}.modalBox{background:white;border-radius:18px;padding:20px;max-width:420px;width:100%}.modalBox input,.modalBox select{width:100%;padding:12px;margin:8px 0 12px;border:1px solid var(--line);border-radius:12px}.participant{cursor:pointer}.drawer{position:fixed;right:0;top:0;bottom:0;width:min(420px,100%);background:white;box-shadow:-10px 0 30px #0003;padding:22px;transform:translateX(105%);transition:.2s;z-index:8}.drawer.show{transform:none}.close{float:right;font-size:28px;border:0;background:transparent;cursor:pointer}@media(max-width:720px){.match{grid-template-columns:1fr}.status{text-align:left}.players{font-size:18px}.content{padding:12px}.bar{margin:12px}.hero{padding:16px}.event p{font-size:16px}.table{font-size:14px}.hideMobile{display:none}}
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="hero">
+    <div class="logoRow">
+      <div class="logoText">HÜRTH<br><span>OPEN</span></div>
+      <div class="event">
+        <h1>9. Hürth Open<br>Preisgeldturnier</h1>
+        <p>TC Rot-Weiß Hürth-Gleuel<br>18.07.2026 bis 02.08.2026</p>
+        <div class="sponsor">sponsored by DMF Consulting GmbH</div>
+      </div>
+    </div>
+  </header>
+  <div class="bar"><strong>📅 Samstag, 25. Juli 2026</strong><button class="btn red" onclick="setTab('admin')">Admin</button></div>
+  <nav class="tabs">
+    <button class="tab active" data-tab="home" onclick="setTab('home')">Start</button>
+    <button class="tab" data-tab="plan" onclick="setTab('plan')">Tagesplan</button>
+    <button class="tab" data-tab="results" onclick="setTab('results')">Ergebnisse</button>
+    <button class="tab" data-tab="participants" onclick="setTab('participants')">Teilnehmer</button>
+    <button class="tab" data-tab="admin" onclick="setTab('admin')">Admin</button>
+  </nav>
+  <main class="content" id="view"></main>
+</div>
+<div class="modal" id="modal"><div class="modalBox" id="modalBox"></div></div>
+<div class="drawer" id="drawer"></div>
+<script>
+const places=['Platz 1','Platz 2','Platz 3','Platz 4','Platz 5','Platz 6'];
+let matches=JSON.parse(localStorage.getItem('ho_matches_v02')||'null')||[
+{id:1,time:'09:00',place:'Platz 1',origPlace:'Platz 1',comp:'Herren 40',round:'Halbfinale',a:'Esser Ralf',b:'Wilkens Peter',status:'live',start:'09:08',result:''},
+{id:2,time:'09:00',place:'Platz 2',origPlace:'Platz 2',comp:'Damen 40',round:'Gruppe',a:'Hambach Rebekka',b:'Schulte Angelika',status:'live',start:'09:12',result:''},
+{id:3,time:'11:00',place:'Platz 1',origPlace:'Platz 1',comp:'Herren 55',round:'Halbfinale',a:'Schwerin Bernd',b:'Balgheim Jörg',status:'planned',result:''},
+{id:4,time:'11:00',place:'Platz 3',origPlace:'Platz 3',comp:'Herren',round:'Halbfinale',a:'Linker Leonard',b:'Philipp Dario',status:'planned',result:''},
+{id:5,time:'14:00',place:'Platz 2',origPlace:'Platz 1',comp:'Herren 40',round:'Halbfinale',a:'Esser Ralf',b:'Honert Stefan',status:'planned',result:''},
+{id:6,time:'14:00',place:'Platz 5',origPlace:'Platz 5',comp:'Damen 55',round:'Halbfinale',a:'Ellmann Claudia',b:'Hohengarten Gabriele',status:'planned',result:''},
+{id:7,time:'16:30',place:'Platz 1',origPlace:'Platz 1',comp:'Herren 50',round:'Halbfinale',a:'Zelder Frank',b:'Heinen Sascha',status:'planned',result:''},
+{id:8,time:'19:15',place:'Platz 2',origPlace:'Platz 2',comp:'Herren',round:'Halbfinale',a:'Löfken Martin',b:'Wekking Tobias',status:'planned',result:''}
+];
+let participants=[
+{name:'Amelung, Max',club:'TC Viktoria',lk:'LK 15,2',year:'1996',comp:'Herren Einzel',status:'im Feld'},
+{name:'Brokate, Jolan',club:'Kölner TG Blau-Gold',lk:'LK 20,1',year:'1998',comp:'Herren Einzel',status:'im Feld'},
+{name:'Jachmich, Alexander',club:'TC Rot-Weiß Hürth-Gleuel',lk:'LK 18,2',year:'1994',comp:'Herren Einzel',status:'im Feld'},
+{name:'Honert, Stefan',club:'TC Rot-Weiß Hürth-Gleuel',lk:'LK 14,0',year:'1980',comp:'Herren 40',status:'im Feld'},
+{name:'Hambach, Rebekka',club:'TC Rot-Weiß Hürth-Gleuel',lk:'LK 12,5',year:'1982',comp:'Damen 40',status:'im Feld'},
+{name:'Esser, Ralf',club:'TC RW',lk:'LK 8,4',year:'1977',comp:'Herren 40',status:'im Feld'}
+];
+let current='home';function save(){localStorage.setItem('ho_matches_v02',JSON.stringify(matches));}
+function setTab(t){current=t;document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab===t));render();}
+function minsSince(t){if(!t)return'';let [h,m]=t.split(':').map(Number),d=new Date(),s=new Date();s.setHours(h,m,0,0);let min=Math.max(0,Math.floor((d-s)/60000));return min+' min';}
+function matchRow(m,dark=false){let changed=m.place!==m.origPlace?`<div class="meta">🔁 ursprünglich ${m.origPlace}</div>`:'';let status=m.status==='live'?`<span class="liveDot"></span>läuft seit<br>${minsSince(m.start)}`:m.status==='done'?`✅ beendet<br>${m.result||''}`:'⏳ geplant';return `<div class="match"><div><span class="badge">${m.place}</span><div class="meta">${m.time} · ${m.comp}<br>${m.round}</div>${changed}</div><div class="players">${m.a}<span class="vs">vs</span>${m.b}</div><div class="status">${status}</div></div>`}
+function renderHome(){let live=matches.filter(m=>m.status==='live'), next=matches.filter(m=>m.status==='planned').slice(0,4);return `<section class="card dark"><div class="cardHead"><div><h2>🟢 LIVE – Jetzt auf der Anlage</h2><div class="sub">${live.length} Spiele laufen</div></div><button class="btn light" onclick="setTab('plan')">Alle Spiele</button></div>${live.map(m=>matchRow(m,true)).join('')||'<div class="match">Aktuell kein Spiel live.</div>'}</section><section class="card"><div class="cardHead"><h2>⏭ Als Nächstes</h2><button class="btn red" onclick="setTab('plan')">Kompletten Plan anzeigen</button></div>${next.map(matchRow).join('')}</section><section class="card"><div class="cardHead"><h2>🔍 Spieler suchen</h2></div><div style="padding:18px"><input class="search" id="homeSearch" placeholder="Name eingeben, z. B. Honert" oninput="searchAll(this.value)"><div id="searchResults"></div></div></section>`}
+function searchAll(q){let r=document.getElementById('searchResults');if(!q||q.length<2){r.innerHTML='';return}q=q.toLowerCase();let found=matches.filter(m=>(m.a+' '+m.b).toLowerCase().includes(q));r.innerHTML=found.map(matchRow).join('')||'<p>Kein Spiel gefunden.</p>'}
+function renderPlan(){return `<section class="card"><div class="cardHead"><h2>📋 Tagesplan</h2></div><div style="padding:18px"><input class="search" id="q" placeholder="Spieler suchen" oninput="renderPlanList()"><div class="filters"><select class="select" id="placeF" onchange="renderPlanList()"><option value="">Alle Plätze</option>${places.map(p=>`<option>${p}</option>`).join('')}</select><select class="select" id="compF" onchange="renderPlanList()"><option value="">Alle Konkurrenzen</option>${[...new Set(matches.map(m=>m.comp))].map(c=>`<option>${c}</option>`).join('')}</select></div><div id="planList"></div></div></section>`}
+function renderPlanList(){let q=(document.getElementById('q')?.value||'').toLowerCase(),p=document.getElementById('placeF')?.value||'',c=document.getElementById('compF')?.value||'';let list=matches.filter(m=>(!q||(m.a+' '+m.b).toLowerCase().includes(q))&&(!p||m.place===p)&&(!c||m.comp===c));document.getElementById('planList').innerHTML=list.map(matchRow).join('')||'<p>Nichts gefunden.</p>'}
+function renderResults(){let done=matches.filter(m=>m.status==='done');return `<section class="card"><div class="cardHead"><h2>🏆 Ergebnisse</h2></div>${done.map(matchRow).join('')||'<div style="padding:18px">Noch keine Ergebnisse eingetragen.</div>'}</section>`}
+function renderParticipants(){return `<section class="card"><div class="cardHead"><h2>👥 Teilnehmerliste</h2></div><div style="padding:18px"><input class="search" id="pq" placeholder="Name, Verein oder Konkurrenz suchen" oninput="renderParticipantsList()"><div id="plist"></div></div></section>`}
+function renderParticipantsList(){let q=(document.getElementById('pq')?.value||'').toLowerCase();let list=participants.filter(p=>!q||Object.values(p).join(' ').toLowerCase().includes(q));document.getElementById('plist').innerHTML=`<table class="table"><tr><th>Name</th><th>Verein</th><th>LK</th><th class="hideMobile">Konkurrenz</th></tr>${list.map((p,i)=>`<tr class="participant" onclick="openPlayer(${i})"><td><b>${p.name}</b></td><td>${p.club}</td><td>${p.lk}</td><td class="hideMobile">${p.comp}</td></tr>`).join('')}</table>`}
+function openPlayer(i){let p=participants[i];drawer.innerHTML=`<button class="close" onclick="drawer.classList.remove('show')">×</button><h2>${p.name}</h2><p><b>Verein:</b><br>${p.club}</p><p><b>LK:</b><br>${p.lk}</p><p><b>Jahrgang:</b><br>${p.year}</p><p><b>Konkurrenz:</b><br>${p.comp}</p><p><b>Status:</b><br>${p.status}</p>`;drawer.classList.add('show')}
+function renderAdmin(){return `<section class="card"><div class="cardHead"><div><h2>🔐 Admin-Demo</h2><div class="sub">PDF-Upload kommt in Version 0.3</div></div><button class="btn light" onclick="resetDemo()">Demo zurücksetzen</button></div><div class="content adminGrid">${matches.map(m=>`<div class="adminMatch ${m.status}"><b>${m.time} · ${m.place}</b><br><span class="meta">${m.comp} · ${m.round}</span><h3>${m.a}<br>vs<br>${m.b}</h3><p>Status: <b>${m.status}</b>${m.result?`<br>Ergebnis: <b>${m.result}</b>`:''}</p><div class="adminActions"><button class="btn green" onclick="startMatch(${m.id})">▶ Start</button><button class="btn red" onclick="finishMatch(${m.id})">■ Beenden</button><button class="btn amber" onclick="changePlace(${m.id})">Platz ändern</button><button class="btn light" onclick="changeTime(${m.id})">Uhrzeit</button></div></div>`).join('')}</div></section>`}
+function startMatch(id){let m=matches.find(x=>x.id===id);m.status='live';let d=new Date();m.start=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');save();render();}
+function finishMatch(id){let m=matches.find(x=>x.id===id);modalBox.innerHTML=`<h2>Ergebnis eintragen</h2><p><b>${m.a}</b> vs <b>${m.b}</b></p><input id="res" placeholder="z. B. 6:4 6:3 oder 6:3 4:6 10:7"><button class="btn red" onclick="saveResult(${id})">Speichern</button> <button class="btn light" onclick="modal.classList.remove('show')">Abbrechen</button>`;modal.classList.add('show')}
+function saveResult(id){let m=matches.find(x=>x.id===id);m.result=document.getElementById('res').value||'beendet';m.status='done';modal.classList.remove('show');save();render();}
+function changePlace(id){let m=matches.find(x=>x.id===id);modalBox.innerHTML=`<h2>Platz ändern</h2><select id="newPlace">${places.map(p=>`<option ${p===m.place?'selected':''}>${p}</option>`).join('')}</select><button class="btn red" onclick="savePlace(${id})">Speichern</button> <button class="btn light" onclick="modal.classList.remove('show')">Abbrechen</button>`;modal.classList.add('show')}
+function savePlace(id){matches.find(x=>x.id===id).place=document.getElementById('newPlace').value;modal.classList.remove('show');save();render();}
+function changeTime(id){let m=matches.find(x=>x.id===id);modalBox.innerHTML=`<h2>Uhrzeit ändern</h2><input id="newTime" value="${m.time}"><button class="btn red" onclick="saveTime(${id})">Speichern</button> <button class="btn light" onclick="modal.classList.remove('show')">Abbrechen</button>`;modal.classList.add('show')}
+function saveTime(id){matches.find(x=>x.id===id).time=document.getElementById('newTime').value;modal.classList.remove('show');save();render();}
+function resetDemo(){localStorage.removeItem('ho_matches_v02');location.reload()}
+function render(){view.innerHTML=current==='home'?renderHome():current==='plan'?renderPlan():current==='results'?renderResults():current==='participants'?renderParticipants():renderAdmin(); if(current==='plan')renderPlanList(); if(current==='participants')renderParticipantsList();}
+render();
+</script>
+</body>
+</html>

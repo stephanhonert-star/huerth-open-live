@@ -1,0 +1,44 @@
+.nav {
+  position: fixed;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  width: min(760px, calc(100% - 18px));
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  background: rgba(21, 21, 21, 0.96);
+  padding: 8px;
+  border-radius: 26px;
+  border: 1px solid #303030;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+  z-index: 50;
+}
+
+.nav button {
+  border: 0;
+  background: transparent;
+  color: #ddd;
+  border-radius: 18px;
+  padding: 8px 4px;
+  display: grid;
+  place-items: center;
+  gap: 3px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.nav button.active {
+  background: var(--red);
+  color: white;
+}
+
+.nav svg {
+  width: 20px;
+}
+
+@media (max-width: 520px) {
+  .nav button {
+    font-size: 12px;
+  }
+}

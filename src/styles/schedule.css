@@ -1,0 +1,117 @@
+.scheduleGroups {
+  display: grid;
+  gap: 34px;
+}
+
+.scheduleGroup {
+  display: grid;
+  gap: 16px;
+}
+
+.scheduleTimeLine {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.scheduleTimeLine::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: linear-gradient(90deg, var(--red), transparent);
+}
+
+.scheduleTimeLine span {
+  background: var(--red);
+  color: white;
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-weight: 950;
+  box-shadow: 0 10px 24px rgba(184, 15, 47, 0.32);
+}
+
+.scheduleGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.scheduleCard {
+  background: rgba(20, 20, 20, 0.96);
+  border: 1px solid #2b2b2b;
+  border-radius: 26px;
+  padding: 20px;
+  display: grid;
+  gap: 18px;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.35);
+  transition: 0.25s;
+}
+
+.scheduleCard:hover {
+  transform: translateY(-4px);
+  border-color: var(--red);
+  box-shadow: 0 18px 40px rgba(184, 15, 47, 0.18);
+}
+
+.scheduleCardLive {
+  border: 2px solid var(--green);
+  box-shadow: 0 18px 42px rgba(24, 169, 87, 0.22);
+}
+
+.scheduleCardTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
+.scheduleCardTop b {
+  color: var(--red-light);
+  font-size: 20px;
+}
+
+.scheduleCardTop span {
+  background: #2a2a2a;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.schedulePlayers {
+  display: grid;
+  gap: 6px;
+}
+
+.schedulePlayers strong {
+  font-size: 22px;
+  color: white;
+}
+
+.schedulePlayers small {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.scheduleStatus em {
+  display: block;
+  background: #262626;
+  color: white;
+  padding: 10px 12px;
+  border-radius: 14px;
+  font-style: normal;
+  font-weight: 950;
+}
+
+.scheduleCardLive .scheduleStatus em {
+  background: #102c1b;
+  color: #80ffad;
+}
+
+@media (max-width: 650px) {
+  .scheduleCardTop {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

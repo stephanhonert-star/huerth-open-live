@@ -1,0 +1,39 @@
+.hero {
+  background: rgba(5, 5, 5, 0.96);
+  text-align: center;
+  padding: 24px 16px 30px;
+  border-bottom: 4px solid var(--red);
+}
+
+.heroHeader {
+  width: min(520px, 95%);
+  height: auto;
+  display: block;
+  margin: 0 auto 18px;
+}
+
+.hero p {
+  margin: 0;
+  color: #ddd;
+  font-size: 18px;
+}
+
+.hero span {
+  display: inline-block;
+  margin-top: 14px;
+  background: var(--red);
+  color: white;
+  padding: 8px 22px;
+  border-radius: 999px;
+  font-weight: 900;
+}
+
+@media (max-width: 650px) {
+  .hero {
+    padding: 18px 12px 24px;
+  }
+
+  .heroHeader {
+    width: 95%;
+  }
+}

@@ -1,0 +1,111 @@
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.stats div {
+  background: var(--card);
+  color: white;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  padding: 18px;
+  display: grid;
+  gap: 5px;
+  cursor: pointer;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.35);
+}
+
+.stats svg {
+  color: var(--red-light);
+}
+
+.stats b {
+  font-size: 32px;
+}
+
+.stats small {
+  color: var(--muted);
+  font-weight: 750;
+}
+
+.cards,
+.liveGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.card {
+  background: var(--card);
+  color: white;
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  padding: 20px;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.35);
+}
+
+.liveCard {
+  border: 2px solid var(--green);
+  box-shadow: 0 18px 42px rgba(24, 169, 87, 0.22);
+}
+
+.top {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.top span {
+  background: #2a2a2a;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.top b {
+  color: var(--red-light);
+}
+
+.time {
+  display: block;
+  margin: 18px 0;
+  font-size: 32px;
+  color: white;
+}
+
+.card h3 {
+  margin: 6px 0;
+  font-size: 22px;
+}
+
+.card p {
+  margin: 4px 0;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.card em {
+  display: block;
+  margin-top: 16px;
+  background: #102c1b;
+  color: #80ffad;
+  padding: 10px;
+  border-radius: 14px;
+  font-style: normal;
+  font-weight: 950;
+}
+
+.card em.result {
+  background: #262626;
+  color: white;
+}
+
+@media (max-width: 760px) {
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

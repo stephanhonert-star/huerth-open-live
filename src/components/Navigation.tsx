@@ -1,4 +1,4 @@
-import { CalendarDays, Home, Trophy, Utensils, Users } from "lucide-react";
+import { CalendarDays, Home, MapPin, Utensils, Users } from "lucide-react";
 import type { Tab } from "../types";
 
 type NavigationProps = {
@@ -14,6 +14,11 @@ function Navigation({ activeTab, onChangeTab }: NavigationProps) {
         Start
       </button>
 
+      <button onClick={() => onChangeTab("courts")} className={activeTab === "courts" ? "active" : ""}>
+        <MapPin />
+        Plätze
+      </button>
+
       <button onClick={() => onChangeTab("plan")} className={activeTab === "plan" ? "active" : ""}>
         <CalendarDays />
         Plan
@@ -21,12 +26,7 @@ function Navigation({ activeTab, onChangeTab }: NavigationProps) {
 
       <button onClick={() => onChangeTab("teilnehmer")} className={activeTab === "teilnehmer" ? "active" : ""}>
         <Users />
-        Teilnehmer
-      </button>
-
-      <button onClick={() => onChangeTab("ergebnisse")} className={activeTab === "ergebnisse" ? "active" : ""}>
-        <Trophy />
-        Ergebnisse
+        Spieler
       </button>
 
       <button onClick={() => onChangeTab("gastro")} className={activeTab === "gastro" ? "active" : ""}>

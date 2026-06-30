@@ -16,11 +16,43 @@ function Home({ live, planned, allMatches, done, players, onChangeTab }: HomePro
 
   return (
     <>
-      <section className="liveCenter premiumHero">
+      <section className="eventHero">
+        <p>TOURNAMENT CENTER</p>
+        <h1>9. Hürth Open</h1>
+        <span>18.07.2026 – 02.08.2026 · TC Rot-Weiß Hürth-Gleuel</span>
+
+        <div className="eventStats">
+          <div>
+            <b>163</b>
+            <small>Teilnehmer</small>
+          </div>
+          <div>
+            <b>10</b>
+            <small>Konkurrenzen</small>
+          </div>
+          <div>
+            <b>5 + 1</b>
+            <small>Matchplätze</small>
+          </div>
+          <div>
+            <b>16</b>
+            <small>Turniertage</small>
+          </div>
+        </div>
+
+        <div className="eventStatus">
+          <span>🟢 Anlage geöffnet</span>
+          <span>🎾 Livebetrieb</span>
+          <span>🍔 Gastro geöffnet</span>
+          <span>🎵 Turniersong online</span>
+        </div>
+      </section>
+
+      <section className="liveCenter">
         <div>
           <p>🟢 LIVE-CENTER</p>
-          <h2>Heute bei den Hürth Open</h2>
-          <span>Sonntag, 13.07.2025 · TC Rot-Weiß Hürth-Gleuel</span>
+          <h2>{live.length} Spiele laufen gerade</h2>
+          <span>Alle aktuellen Matches auf einen Blick</span>
         </div>
 
         {nextMatch && (
@@ -35,11 +67,10 @@ function Home({ live, planned, allMatches, done, players, onChangeTab }: HomePro
       </section>
 
       <StatsCards
-        liveCount={live.length}
-        matchCount={allMatches.length}
-        resultCount={done.length}
-        playerCount={players.length}
-        onChangeTab={onChangeTab}
+  liveCount={live.length}
+  matchCount={allMatches.length}
+  playerCount={players.length}
+  onChangeTab={onChangeTab}
       />
 
       <section className="sectionTitle">

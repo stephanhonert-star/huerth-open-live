@@ -3,20 +3,22 @@ import Header from "./components/Header";
 import Navigation from "./components/Navigation";
 import { matches } from "./data/matches";
 import { players } from "./data/players";
+import Courts from "./pages/Courts";
 import Gastro from "./pages/Gastro";
 import Home from "./pages/Home";
 import Players from "./pages/Players";
-import Results from "./pages/Results";
 import Schedule from "./pages/Schedule";
 import type { Tab } from "./types";
 
 import "./styles/app.css";
 import "./styles/header.css";
+import "./styles/home.css";
 import "./styles/cards.css";
 import "./styles/navigation.css";
 import "./styles/players.css";
 import "./styles/gastro.css";
 import "./styles/schedule.css";
+import "./styles/courts.css";
 import "./styles/audio-player.css";
 
 function App() {
@@ -46,13 +48,13 @@ function App() {
           />
         )}
 
+        {tab === "courts" && <Courts matches={matches} />}
+
         {tab === "plan" && <Schedule matches={matches} />}
 
         {tab === "teilnehmer" && (
           <Players players={shownPlayers} clubs={clubs} selectedClub={club} onSelectClub={setClub} />
         )}
-
-        {tab === "ergebnisse" && <Results results={done} />}
 
         {tab === "gastro" && <Gastro />}
       </main>

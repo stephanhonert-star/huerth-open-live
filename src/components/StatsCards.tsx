@@ -1,18 +1,22 @@
-import { CalendarDays, Radio, Trophy, Users } from "lucide-react";
+import { CalendarDays, MapPin, Radio, Users } from "lucide-react";
 import type { Tab } from "../types";
 
 type StatsCardsProps = {
   liveCount: number;
   matchCount: number;
-  resultCount: number;
   playerCount: number;
   onChangeTab: (tab: Tab) => void;
 };
 
-function StatsCards({ liveCount, matchCount, resultCount, playerCount, onChangeTab }: StatsCardsProps) {
+function StatsCards({
+  liveCount,
+  matchCount,
+  playerCount,
+  onChangeTab,
+}: StatsCardsProps) {
   return (
     <section className="stats">
-      <div onClick={() => onChangeTab("start")}>
+      <div onClick={() => onChangeTab("courts")}>
         <Radio />
         <b>{liveCount}</b>
         <small>Live</small>
@@ -24,10 +28,10 @@ function StatsCards({ liveCount, matchCount, resultCount, playerCount, onChangeT
         <small>Spiele</small>
       </div>
 
-      <div onClick={() => onChangeTab("ergebnisse")}>
-        <Trophy />
-        <b>{resultCount}</b>
-        <small>Ergebnisse</small>
+      <div onClick={() => onChangeTab("courts")}>
+        <MapPin />
+        <b>5 + 1</b>
+        <small>Plätze</small>
       </div>
 
       <div onClick={() => onChangeTab("teilnehmer")}>

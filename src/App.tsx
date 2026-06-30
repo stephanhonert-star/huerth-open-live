@@ -17,6 +17,7 @@ import "./styles/navigation.css";
 import "./styles/players.css";
 import "./styles/gastro.css";
 import "./styles/schedule.css";
+import "./styles/audio-player.css";
 
 function App() {
   const [tab, setTab] = useState<Tab>("start");

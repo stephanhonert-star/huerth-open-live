@@ -1,0 +1,46 @@
+.audioPlayer {
+  width: min(520px, 95%);
+  margin: 18px auto 0;
+  background: rgba(20, 20, 20, 0.96);
+  border: 1px solid #2b2b2b;
+  border-radius: 22px;
+  padding: 12px 14px;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 12px;
+  align-items: center;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.35);
+}
+
+.audioInfo {
+  text-align: left;
+  display: grid;
+  gap: 2px;
+}
+
+.audioInfo small {
+  color: var(--muted);
+  font-weight: 800;
+  font-size: 12px;
+}
+
+.audioInfo strong {
+  color: white;
+  font-size: 16px;
+}
+
+.playButton {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--red);
+  color: white;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.volumeIcon {
+  color: var(--red-light);
+}

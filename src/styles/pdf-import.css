@@ -1,0 +1,79 @@
+.pdfImportBox {
+  background: rgba(20, 20, 20, 0.96);
+  border: 1px dashed rgba(255, 73, 104, 0.7);
+  border-radius: 30px;
+  padding: 34px;
+  text-align: center;
+  display: grid;
+  gap: 14px;
+  place-items: center;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.35);
+}
+
+.pdfImportBox svg {
+  color: var(--red-light);
+}
+
+.pdfImportBox h3 {
+  margin: 0;
+  font-size: 30px;
+}
+
+.pdfImportBox p {
+  margin: 0;
+  max-width: 560px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.pdfButton {
+  margin-top: 8px;
+  background: var(--red);
+  color: white;
+  border-radius: 999px;
+  padding: 12px 20px;
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.pdfButton input {
+  display: none;
+}
+
+.importRoadmap {
+  margin-top: 22px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.importRoadmap article {
+  background: rgba(20, 20, 20, 0.96);
+  border: 1px solid #2b2b2b;
+  border-radius: 24px;
+  padding: 20px;
+  display: grid;
+  gap: 8px;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.35);
+}
+
+.importRoadmap b {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  background: var(--red);
+  color: white;
+  border-radius: 999px;
+}
+
+.importRoadmap span {
+  color: white;
+  font-weight: 850;
+}
+
+@media (max-width: 760px) {
+  .importRoadmap {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

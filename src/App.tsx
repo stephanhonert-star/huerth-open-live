@@ -6,6 +6,7 @@ import { players } from "./data/players";
 import Courts from "./pages/Courts";
 import Gastro from "./pages/Gastro";
 import Home from "./pages/Home";
+import PdfImport from "./pages/PdfImport";
 import Players from "./pages/Players";
 import Schedule from "./pages/Schedule";
 import type { Tab } from "./types";
@@ -19,6 +20,7 @@ import "./styles/players.css";
 import "./styles/gastro.css";
 import "./styles/schedule.css";
 import "./styles/courts.css";
+import "./styles/pdf-import.css";
 import "./styles/audio-player.css";
 
 function App() {
@@ -57,6 +59,8 @@ function App() {
         )}
 
         {tab === "gastro" && <Gastro />}
+
+        {tab === "import" && <PdfImport />}
       </main>
 
       <Navigation activeTab={tab} onChangeTab={setTab} />

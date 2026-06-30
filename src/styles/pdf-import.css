@@ -76,4 +76,64 @@
   .importRoadmap {
     grid-template-columns: repeat(2, 1fr);
   }
+}.fileName {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.importLoading {
+  color: #80ffad;
+}
+
+.importPreview {
+  margin-top: 24px;
+  display: grid;
+  gap: 14px;
+}
+
+.importPreviewHeader {
+  background: rgba(20, 20, 20, 0.96);
+  border: 1px solid #2b2b2b;
+  border-radius: 24px;
+  padding: 18px;
+  display: grid;
+  gap: 4px;
+}
+
+.importPreviewHeader b {
+  color: white;
+  font-size: 24px;
+}
+
+.importPreviewHeader span {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.importTable {
+  display: grid;
+  gap: 10px;
+}
+
+.importTable article {
+  background: rgba(20, 20, 20, 0.96);
+  border: 1px solid #2b2b2b;
+  border-radius: 20px;
+  padding: 16px;
+  display: grid;
+  gap: 4px;
+}
+
+.importTable b {
+  color: white;
+}
+
+.importTable span {
+  color: var(--red-light);
+  font-weight: 850;
+}
+
+.importTable small {
+  color: var(--muted);
+  font-weight: 700;
 }

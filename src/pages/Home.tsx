@@ -1,3 +1,4 @@
+import Countdown from "../components/Countdown";
 import MatchCard from "../components/MatchCard";
 import StatsCards from "../components/StatsCards";
 import type { Match, Player, Tab } from "../types";
@@ -16,6 +17,8 @@ function Home({ live, planned, allMatches, done, players, onChangeTab }: HomePro
 
   return (
     <>
+      <Countdown />
+
       <section className="eventHero">
         <p>TOURNAMENT CENTER</p>
         <h1>9. Hürth Open</h1>
@@ -67,10 +70,10 @@ function Home({ live, planned, allMatches, done, players, onChangeTab }: HomePro
       </section>
 
       <StatsCards
-  liveCount={live.length}
-  matchCount={allMatches.length}
-  playerCount={players.length}
-  onChangeTab={onChangeTab}
+        liveCount={live.length}
+        matchCount={allMatches.length}
+        playerCount={players.length}
+        onChangeTab={onChangeTab}
       />
 
       <section className="sectionTitle">

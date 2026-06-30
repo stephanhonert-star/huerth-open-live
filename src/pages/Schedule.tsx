@@ -1,18 +1,64 @@
-import type { Match } from "../types";
+import { useState } from "react";
+import type { Match, Player } from "../types";
 
 type ScheduleProps = {
   matches: Match[];
+  players: Player[];
 };
 
-function Schedule({ matches }: ScheduleProps) {
+function normalizeName(name: string) {
+  return name
+    .toLowerCase()
+    .replace(",", "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function flipName(name: string) {
+  const parts = normalizeName(name).split(" ");
+
+  if (parts.length < 2) {
+    return normalizeName(name);
+  }
+
+  return `${parts.slice(1).join(" ")} ${parts[0]}`;
+}
+
+function Schedule({ matches, players }: ScheduleProps) {
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+  const [fallbackName, setFallbackName] = useState("");
+
   const times = Array.from(new Set(matches.map((match) => match.time))).sort();
+
+  function openPlayer(name: string) {
+    const wanted = normalizeName(name);
+    const flipped = flipName(name);
+
+    const player = players.find((item) => {
+      const playerName = normalizeName(item.name);
+      return playerName === wanted || playerName === flipped;
+    });
+
+    if (player) {
+      setSelectedPlayer(player);
+      setFallbackName("");
+    } else {
+      setSelectedPlayer(null);
+      setFallbackName(name);
+    }
+  }
+
+  function closeModal() {
+    setSelectedPlayer(null);
+    setFallbackName("");
+  }
 
   return (
     <>
       <section className="pageHeader">
         <p>📅 SPIELPLAN</p>
         <h2>Heute angesetzt</h2>
-        <span>Alle Spiele nach Uhrzeit und Platz sortiert</span>
+        <span>Tippe auf einen Spielernamen für Details</span>
       </section>
 
       <section className="scheduleGroups">
@@ -39,9 +85,15 @@ function Schedule({ matches }: ScheduleProps) {
                     </div>
 
                     <div className="schedulePlayers">
-                      <strong>{match.a}</strong>
+                      <button type="button" onClick={() => openPlayer(match.a)}>
+                        {match.a}
+                      </button>
+
                       <small>gegen</small>
-                      <strong>{match.b}</strong>
+
+                      <button type="button" onClick={() => openPlayer(match.b)}>
+                        {match.b}
+                      </button>
                     </div>
 
                     <div className="scheduleStatus">
@@ -56,6 +108,57 @@ function Schedule({ matches }: ScheduleProps) {
           );
         })}
       </section>
+
+      {(selectedPlayer || fallbackName) && (
+        <div className="playerOverlay" onClick={closeModal}>
+          <article className="playerModal" onClick={(event) => event.stopPropagation()}>
+            <button className="modalClose" onClick={closeModal}>
+              ×
+            </button>
+
+            <small>Spielerprofil</small>
+
+            {selectedPlayer ? (
+              <>
+                <h2>{selectedPlayer.name}</h2>
+
+                <div className="playerFacts">
+                  <div>
+                    <span>Verein</span>
+                    <b>{selectedPlayer.club}</b>
+                  </div>
+
+                  <div>
+                    <span>Konkurrenz</span>
+                    <b>{selectedPlayer.competition}</b>
+                  </div>
+
+                  <div>
+                    <span>LK</span>
+                    <b>{selectedPlayer.lk}</b>
+                  </div>
+
+                  <div>
+                    <span>Jahrgang</span>
+                    <b>{selectedPlayer.year}</b>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2>{fallbackName}</h2>
+
+                <div className="playerFacts">
+                  <div>
+                    <span>Hinweis</span>
+                    <b>Dieser Spieler ist noch nicht in der Teilnehmerliste hinterlegt.</b>
+                  </div>
+                </div>
+              </>
+            )}
+          </article>
+        </div>
+      )}
     </>
   );
 }

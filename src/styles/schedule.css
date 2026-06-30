@@ -84,9 +84,20 @@
   gap: 6px;
 }
 
-.schedulePlayers strong {
-  font-size: 22px;
+.schedulePlayers button {
+  width: fit-content;
+  border: 0;
+  background: transparent;
   color: white;
+  padding: 0;
+  font-size: 22px;
+  font-weight: 950;
+  text-align: left;
+  cursor: pointer;
+}
+
+.schedulePlayers button:hover {
+  color: var(--red-light);
 }
 
 .schedulePlayers small {
@@ -109,9 +120,86 @@
   color: #80ffad;
 }
 
+.playerOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.78);
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  z-index: 100;
+}
+
+.playerModal {
+  width: min(520px, 100%);
+  background:
+    radial-gradient(circle at top right, rgba(255, 73, 104, 0.18), transparent 18rem),
+    rgba(20, 20, 20, 0.98);
+  border: 1px solid #333;
+  border-radius: 30px;
+  padding: 28px;
+  position: relative;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.75);
+}
+
+.playerModal small {
+  color: #80ffad;
+  font-weight: 950;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.playerModal h2 {
+  margin: 8px 0 20px;
+  font-size: 34px;
+}
+
+.modalClose {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--red);
+  color: white;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.playerFacts {
+  display: grid;
+  gap: 12px;
+}
+
+.playerFacts div {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid #303030;
+  border-radius: 18px;
+  padding: 14px;
+  display: grid;
+  gap: 4px;
+}
+
+.playerFacts span {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.playerFacts b {
+  color: white;
+  font-size: 18px;
+}
+
 @media (max-width: 650px) {
   .scheduleCardTop {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .playerModal h2 {
+    font-size: 28px;
   }
 }

@@ -1,4 +1,5 @@
 import type { Match } from "../types";
+import ResultScore from "./ResultScore";
 
 type MatchCardProps = {
   match: Match;
@@ -14,12 +15,18 @@ function MatchCard({ match }: MatchCardProps) {
 
       <strong className="time">{match.time}</strong>
 
-      <h3>{match.a}</h3>
-      <p>gegen</p>
-      <h3>{match.b}</h3>
+      {match.status === "done" && match.result ? (
+        <ResultScore playerA={match.a} playerB={match.b} result={match.result} />
+      ) : (
+        <>
+          <h3>{match.a}</h3>
+          <p>gegen</p>
+          <h3>{match.b}</h3>
+        </>
+      )}
 
       {match.status === "live" && <em>läuft seit {match.since} Uhr</em>}
-      {match.status === "done" && <em className="result">Ergebnis: {match.result}</em>}
+      {match.status === "planned" && <em className="planned">angesetzt</em>}
     </article>
   );
 }

@@ -14,6 +14,7 @@ import type { Tab } from "./types";
 import "./styles/app.css";
 import "./styles/header.css";
 import "./styles/home.css";
+import "./styles/countdown.css";
 import "./styles/cards.css";
 import "./styles/navigation.css";
 import "./styles/players.css";
@@ -78,7 +79,7 @@ function App() {
 
         {tab === "courts" && <Courts matches={matches} />}
 
-        {tab === "plan" && <Schedule matches={matches} />}
+        {tab === "plan" && <Schedule matches={matches} players={players} />}
 
         {tab === "teilnehmer" && (
           <Players players={shownPlayers} clubs={clubs} selectedClub={club} onSelectClub={setClub} />

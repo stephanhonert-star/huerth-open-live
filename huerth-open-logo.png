@@ -1,0 +1,172 @@
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { CalendarDays, Trophy, Users, Radio, Info, Search } from 'lucide-react';
+import './styles.css';
+import logo from './assets/huerth-open-logo.png';
+import { matches, players } from './data/sampleData';
+
+type Tab = 'live' | 'plan' | 'players' | 'results' | 'info';
+
+function Header() {
+  return (
+    <header className="hero">
+      <img src={logo} alt="9. Hürth Open Preisgeldturnier sponsored by DMF Consulting GmbH" className="logo" />
+      <div className="live-pill">Hürth Open LIVE</div>
+    </header>
+  );
+}
+
+function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="stat-card">
+      <div className="stat-icon">{icon}</div>
+      <div>
+        <div className="stat-value">{value}</div>
+        <div className="stat-label">{label}</div>
+      </div>
+    </div>
+  );
+}
+
+function MatchCard({ match }: { match: typeof matches[number] }) {
+  return (
+    <article className={`match-card ${match.status}`}>
+      <div className="match-top">
+        <span className="badge">{match.competition}</span>
+        <span className="court">Platz {match.court}</span>
+      </div>
+      <div className="match-time">{match.time}</div>
+      <div className="players">
+        <strong>{match.playerA}</strong>
+        <span>gegen</span>
+        <strong>{match.playerB}</strong>
+      </div>
+      {match.status === 'live' && <div className="status live">🟢 läuft seit {match.startedAgo}</div>}
+      {match.status === 'done' && <div className="status done">🏆 Ergebnis: {match.result}</div>}
+      {match.note && <div className="note">{match.note}</div>}
+    </article>
+  );
+}
+
+function Dashboard() {
+  const live = matches.filter(m => m.status === 'live');
+  const done = matches.filter(m => m.status === 'done');
+
+  return (
+    <main className="page">
+      <section className="today">
+        <h1>Heute auf der Anlage</h1>
+        <p>Sonntag, 13.07.2025 · TC Rot-Weiß Hürth-Gleuel</p>
+      </section>
+
+      <section className="stats">
+        <StatCard icon={<Radio />} label="Live" value={`${live.length} Spiele`} />
+        <StatCard icon={<CalendarDays />} label="Heute geplant" value={`${matches.length} Spiele`} />
+        <StatCard icon={<Trophy />} label="Beendet" value={`${done.length} Ergebnisse`} />
+        <StatCard icon={<Users />} label="Teilnehmer" value={`${players.length} Spieler`} />
+      </section>
+
+      <section className="section">
+        <div className="section-title">
+          <h2>🟢 Live</h2>
+          <span>{live.length} Spiele laufen</span>
+        </div>
+        <div className="match-grid">
+          {live.map(match => <MatchCard key={match.id} match={match} />)}
+        </div>
+      </section>
+
+      <section className="section">
+        <div className="section-title">
+          <h2>⏭️ Als Nächstes</h2>
+          <span>geplante Spiele</span>
+        </div>
+        <div className="match-grid">
+          {matches.filter(m => m.status === 'planned').slice(0, 4).map(match => <MatchCard key={match.id} match={match} />)}
+        </div>
+      </section>
+    </main>
+  );
+}
+
+function PlanPage() {
+  return (
+    <main className="page">
+      <h1>Spielplan</h1>
+      <div className="searchbar"><Search size={18} /> Spieler, Verein oder Konkurrenz suchen</div>
+      <div className="match-grid">
+        {matches.map(match => <MatchCard key={match.id} match={match} />)}
+      </div>
+    </main>
+  );
+}
+
+function PlayersPage() {
+  return (
+    <main className="page">
+      <h1>Teilnehmer</h1>
+      <div className="player-list">
+        {players.map(player => (
+          <article className="player-card" key={player.name}>
+            <strong>{player.name}</strong>
+            <span>{player.competition}</span>
+            <div>{player.club}</div>
+            <small>LK {player.lk} · Jahrgang {player.year}</small>
+          </article>
+        ))}
+      </div>
+    </main>
+  );
+}
+
+function ResultsPage() {
+  return (
+    <main className="page">
+      <h1>Ergebnisse</h1>
+      <div className="match-grid">
+        {matches.filter(m => m.status === 'done').map(match => <MatchCard key={match.id} match={match} />)}
+      </div>
+    </main>
+  );
+}
+
+function InfoPage() {
+  return (
+    <main className="page">
+      <h1>Info</h1>
+      <div className="info-card">
+        <h2>TC Rot-Weiß Hürth-Gleuel</h2>
+        <p>Adresse, Parken, Gastronomie, Toiletten und Ansprechpartner werden hier ergänzt.</p>
+      </div>
+      <div className="info-card">
+        <h2>Projektstatus</h2>
+        <p>Version 0.1: Designsystem und Zuschauer-Dashboard.</p>
+      </div>
+    </main>
+  );
+}
+
+function App() {
+  const [tab, setTab] = React.useState<Tab>('live');
+
+  return (
+    <div>
+      <Header />
+      {tab === 'live' && <Dashboard />}
+      {tab === 'plan' && <PlanPage />}
+      {tab === 'players' && <PlayersPage />}
+      {tab === 'results' && <ResultsPage />}
+      {tab === 'info' && <InfoPage />}
+
+      <nav className="bottom-nav">
+        <button className={tab === 'live' ? 'active' : ''} onClick={() => setTab('live')}><Radio />Live</button>
+        <button className={tab === 'plan' ? 'active' : ''} onClick={() => setTab('plan')}><CalendarDays />Plan</button>
+        <button className={tab === 'players' ? 'active' : ''} onClick={() => setTab('players')}><Users />Teilnehmer</button>
+        <button className={tab === 'results' ? 'active' : ''} onClick={() => setTab('results')}><Trophy />Ergebnisse</button>
+        <button className={tab === 'info' ? 'active' : ''} onClick={() => setTab('info')}><Info />Info</button>
+      </nav>
+    </div>
+  );
+}
+
+createRoot(document.getElementById('root')!).render(<App />);

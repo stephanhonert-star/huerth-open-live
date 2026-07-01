@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import Header from "./components/Header";
 import Navigation from "./components/Navigation";
-import { matches } from "./data/matches";
+import { matches as defaultMatches } from "./data/matches";
 import { players as defaultPlayers } from "./data/players";
 import Admin from "./pages/Admin";
 import Courts from "./pages/Courts";
@@ -10,7 +10,7 @@ import Gastro from "./pages/Gastro";
 import Home from "./pages/Home";
 import Players from "./pages/Players";
 import Schedule from "./pages/Schedule";
-import type { Player, Tab } from "./types";
+import type { Match, Player, Tab } from "./types";
 
 import "./styles/app.css";
 import "./styles/header.css";
@@ -29,12 +29,15 @@ import "./styles/pdf-import.css";
 import "./styles/admin.css";
 import "./styles/audio-player.css";
 
+const PLAYER_STORAGE_KEY = "huerthOpenPlayers";
+const MATCH_STORAGE_KEY = "huerthOpenMatches";
+
 function getInitialTab(): Tab {
   return window.location.hash === "#admin" ? "admin" : "start";
 }
 
 function loadPlayers(): Player[] {
-  const savedPlayers = localStorage.getItem("huerthOpenPlayers");
+  const savedPlayers = localStorage.getItem(PLAYER_STORAGE_KEY);
 
   if (!savedPlayers) {
     return defaultPlayers;
@@ -47,10 +50,25 @@ function loadPlayers(): Player[] {
   }
 }
 
+function loadMatches(): Match[] {
+  const savedMatches = localStorage.getItem(MATCH_STORAGE_KEY);
+
+  if (!savedMatches) {
+    return defaultMatches;
+  }
+
+  try {
+    return JSON.parse(savedMatches) as Match[];
+  } catch {
+    return defaultMatches;
+  }
+}
+
 function App() {
   const [tab, setTab] = useState<Tab>(getInitialTab);
   const [club, setClub] = useState("Alle");
   const [players, setPlayers] = useState<Player[]>(loadPlayers);
+  const [matches, setMatches] = useState<Match[]>(loadMatches);
 
   useEffect(() => {
     function handleHashChange() {
@@ -64,12 +82,18 @@ function App() {
       setClub("Alle");
     }
 
+    function handleMatchesUpdated() {
+      setMatches(loadMatches());
+    }
+
     window.addEventListener("hashchange", handleHashChange);
     window.addEventListener("huerthOpenPlayersUpdated", handlePlayersUpdated);
+    window.addEventListener("huerthOpenMatchesUpdated", handleMatchesUpdated);
 
     return () => {
       window.removeEventListener("hashchange", handleHashChange);
       window.removeEventListener("huerthOpenPlayersUpdated", handlePlayersUpdated);
+      window.removeEventListener("huerthOpenMatchesUpdated", handleMatchesUpdated);
     };
   }, []);
 
@@ -88,11 +112,12 @@ function App() {
   const done = matches.filter((match) => match.status === "done");
 
   const clubs = [
-  "Alle",
-  ...Array.from(new Set(players.map((player) => player.club))).sort((a, b) =>
-    a.localeCompare(b, "de")
-  ),
-];
+    "Alle",
+    ...Array.from(new Set(players.map((player) => player.club))).sort((a, b) =>
+      a.localeCompare(b, "de")
+    ),
+  ];
+
   const shownPlayers =
     club === "Alle" ? players : players.filter((player) => player.club === club);
 

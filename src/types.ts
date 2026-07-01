@@ -11,6 +11,8 @@ export interface Match {
   status: MatchStatus;
   since: string;
   result: string;
+
+  drawMatchId?: string;
 }
 
 export interface Player {

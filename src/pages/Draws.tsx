@@ -1,8 +1,23 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import DrawBracket from "../components/draw/DrawBracket";
-import { draws } from "../data/draws";
+import type { Draw } from "../models/Draw";
+import { loadDraws } from "../services/drawProgression";
 
 function Draws() {
+  const [draws, setDraws] = useState<Draw[]>(loadDraws);
+
+  useEffect(() => {
+    function handleDrawsUpdated() {
+      setDraws(loadDraws());
+    }
+
+    window.addEventListener("huerthOpenDrawsUpdated", handleDrawsUpdated);
+
+    return () => {
+      window.removeEventListener("huerthOpenDrawsUpdated", handleDrawsUpdated);
+    };
+  }, []);
+
   const competitions = Array.from(new Set(draws.map((draw) => draw.competition)));
   const [competition, setCompetition] = useState(competitions[0] || "");
   const [bracket, setBracket] = useState<"hauptfeld" | "nebenrunde">("hauptfeld");

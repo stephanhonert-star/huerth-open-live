@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
 import DrawBracket from "../components/draw/DrawBracket";
-import type { Draw } from "../models/Draw";
 import { loadDraws } from "../services/drawProgression";
 
 function Draws() {
-  const [draws, setDraws] = useState<Draw[]>(loadDraws);
+  const [draws, setDraws] = useState(loadDraws);
 
   useEffect(() => {
     function handleDrawsUpdated() {
@@ -22,8 +21,32 @@ function Draws() {
   const [competition, setCompetition] = useState(competitions[0] || "");
   const [bracket, setBracket] = useState<"hauptfeld" | "nebenrunde">("hauptfeld");
 
-  const selectedDraw =
-    draws.find((draw) => draw.competition === competition && draw.bracket === bracket) || draws[0];
+  useEffect(() => {
+    if (!competition && competitions.length > 0) {
+      setCompetition(competitions[0]);
+    }
+  }, [competition, competitions]);
+
+  const selectedDraw = draws.find(
+    (draw) => draw.competition === competition && draw.bracket === bracket
+  );
+
+  if (draws.length === 0) {
+    return (
+      <>
+        <section className="pageHeader">
+          <p>🏆 TURNIERBÄUME</p>
+          <h2>Auslosung</h2>
+          <span>Noch keine Auslosung importiert</span>
+        </section>
+
+        <section className="emptyState">
+          <b>Noch keine Auslosung vorhanden</b>
+          <span>Importiere im Adminbereich eine nuLiga-Auslosung.</span>
+        </section>
+      </>
+    );
+  }
 
   return (
     <>

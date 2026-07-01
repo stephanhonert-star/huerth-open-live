@@ -1,4 +1,4 @@
-export type Tab = "start" | "courts" | "plan" | "teilnehmer" | "gastro" | "admin";
+export type Tab = "start" | "courts" | "plan" | "draws" | "teilnehmer" | "gastro" | "admin";
 
 export type MatchStatus = "live" | "planned" | "done";
 

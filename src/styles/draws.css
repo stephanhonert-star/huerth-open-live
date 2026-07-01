@@ -1,0 +1,57 @@
+.thirdPlaceMatch {
+  border-color: rgba(205, 127, 50, 0.9);
+}
+
+.thirdPlaceMatch::before {
+  background: linear-gradient(180deg, #cd7f32, #8c4b18);
+}
+
+.winnerRound .drawRoundHeader {
+  background: linear-gradient(135deg, #18a957, #0f6f3b);
+  color: white;
+}
+
+.winnerCard {
+  min-height: 310px;
+  background:
+    radial-gradient(circle at center, rgba(255, 210, 80, 0.18), transparent 12rem),
+    linear-gradient(135deg, rgba(20, 20, 20, 0.98), rgba(10, 10, 10, 0.98));
+  border: 1px solid #18a957;
+  border-radius: 28px;
+  padding: 24px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  box-shadow:
+    0 0 36px rgba(24, 169, 87, 0.16),
+    0 22px 50px rgba(0, 0, 0, 0.5);
+}
+
+.winnerCard small {
+  color: #80ffad;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.winnerTrophy {
+  font-size: 84px;
+  filter: drop-shadow(0 0 18px rgba(255, 210, 80, 0.32));
+}
+
+.winnerCard h3 {
+  margin: 0;
+  color: white;
+  font-size: 26px;
+}
+
+.winnerCard p {
+  margin: 0;
+  color: #f3c84d;
+  font-weight: 950;
+}
+
+.winnerCard span {
+  color: var(--muted);
+  font-weight: 800;
+}

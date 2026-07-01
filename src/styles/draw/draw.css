@@ -1,0 +1,434 @@
+.drawStage {
+  overflow-x: auto;
+  padding: 12px 0 26px;
+}
+
+.drawStage::-webkit-scrollbar {
+  height: 12px;
+}
+
+.drawStage::-webkit-scrollbar-track {
+  background: #111;
+  border-radius: 999px;
+}
+
+.drawStage::-webkit-scrollbar-thumb {
+  background: #666;
+  border-radius: 999px;
+}
+
+.drawRail {
+  min-width: 1360px;
+  display: flex;
+  gap: 46px;
+  align-items: flex-start;
+  padding: 8px 6px 28px;
+}
+
+.drawColumn {
+  width: 310px;
+  flex: 0 0 310px;
+  display: grid;
+  gap: 20px;
+}
+
+.drawColumnHead {
+  background: linear-gradient(135deg, #d1113f, #a9082d);
+  color: white;
+  border-radius: 999px;
+  padding: 14px 18px;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  font-weight: 950;
+  box-shadow: 0 14px 34px rgba(184, 15, 47, 0.28);
+}
+
+.drawColumnHead span {
+  font-size: 12px;
+  opacity: 0.92;
+}
+
+.drawColumnBody {
+  display: grid;
+  gap: 30px;
+}
+
+.drawCard {
+  position: relative;
+  width: 100%;
+  text-align: left;
+  border: 1px solid #353535;
+  background: linear-gradient(135deg, rgba(30, 30, 30, 0.98), rgba(10, 10, 10, 0.98));
+  border-radius: 26px;
+  padding: 16px;
+  display: grid;
+  gap: 10px;
+  min-height: 188px;
+  cursor: pointer;
+  box-shadow: 0 20px 46px rgba(0, 0, 0, 0.45);
+  color: white;
+}
+
+.drawCard::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 18px;
+  bottom: 18px;
+  width: 6px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--red), #ff4968);
+}
+
+.drawCard:hover {
+  transform: translateY(-3px);
+  border-color: var(--red);
+}
+
+.drawCardHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.drawCardHead span {
+  color: #80ffad;
+  font-weight: 950;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.drawCardHead b {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.drawPlayerLine {
+  background: #101010;
+  border: 1px solid #303030;
+  border-radius: 16px;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: 34px 1fr 42px;
+  gap: 8px;
+  align-items: center;
+}
+
+.drawPlayerLine small {
+  color: var(--red-light);
+  font-weight: 950;
+  font-size: 18px;
+}
+
+.drawPlayerLine strong {
+  color: white;
+  font-size: 16px;
+}
+
+.drawPlayerLine em {
+  color: white;
+  text-align: right;
+  font-size: 18px;
+  font-style: normal;
+  font-weight: 950;
+}
+
+.drawCardMeta {
+  border-top: 1px solid #303030;
+  padding-top: 10px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.drawCardMeta span {
+  color: var(--muted);
+  font-weight: 850;
+  font-size: 13px;
+}
+
+.drawConnector {
+  position: absolute;
+  right: -46px;
+  top: 50%;
+  width: 46px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--red), rgba(184, 15, 47, 0.15));
+}
+
+.drawConnector::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: -28px;
+  width: 2px;
+  height: 58px;
+  background: rgba(184, 15, 47, 0.65);
+  border-radius: 999px;
+}
+
+.drawThirdCard {
+  border-color: rgba(205, 127, 50, 0.9);
+}
+
+.drawThirdCard::before {
+  background: linear-gradient(180deg, #cd7f32, #8c4b18);
+}
+
+.drawThirdColumn .drawColumnHead {
+  background: linear-gradient(135deg, #cd7f32, #8c4b18);
+}
+
+.drawFinalColumn {
+  width: 360px;
+  flex-basis: 360px;
+}
+
+.drawFinalColumn .drawColumnHead {
+  background: linear-gradient(135deg, #f3c84d, #b77810);
+  color: #151515;
+}
+
+.drawFinalCard {
+  min-height: 245px;
+  border-color: rgba(255, 210, 80, 0.9);
+  box-shadow:
+    0 0 36px rgba(255, 210, 80, 0.16),
+    0 22px 50px rgba(0, 0, 0, 0.5);
+}
+
+.drawFinalCard::before {
+  background: linear-gradient(180deg, #f3c84d, #b77810);
+}
+
+.drawFinalCard .drawCardHead span {
+  color: #f3c84d;
+  font-size: 18px;
+}
+
+.drawWinnerColumn {
+  width: 340px;
+  flex-basis: 340px;
+}
+
+.drawWinnerColumn .drawColumnHead {
+  background: linear-gradient(135deg, #18a957, #0f6f3b);
+}
+
+.drawWinnerCard {
+  min-height: 310px;
+  background:
+    radial-gradient(circle at center, rgba(255, 210, 80, 0.18), transparent 12rem),
+    linear-gradient(135deg, rgba(20, 20, 20, 0.98), rgba(10, 10, 10, 0.98));
+  border: 1px solid #18a957;
+  border-radius: 28px;
+  padding: 24px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  box-shadow:
+    0 0 36px rgba(24, 169, 87, 0.16),
+    0 22px 50px rgba(0, 0, 0, 0.5);
+}
+
+.drawWinnerCard small {
+  color: #80ffad;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.drawWinnerTrophy {
+  font-size: 84px;
+  filter: drop-shadow(0 0 18px rgba(255, 210, 80, 0.32));
+}
+
+.drawWinnerCard h3 {
+  margin: 0;
+  color: white;
+  font-size: 26px;
+}
+
+.drawWinnerCard p {
+  margin: 0;
+  color: #f3c84d;
+  font-weight: 950;
+}
+
+.drawWinnerCard span {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+@media (max-width: 650px) {
+  .drawRail {
+    min-width: 1220px;
+    gap: 34px;
+  }
+
+  .drawColumn {
+    width: 270px;
+    flex-basis: 270px;
+  }
+
+  .drawFinalColumn,
+  .drawWinnerColumn {
+    width: 300px;
+    flex-basis: 300px;
+  }
+}
+.drawStage {
+  scrollbar-width: none;
+}
+
+.drawStage::-webkit-scrollbar {
+  display: none;
+}
+
+.drawFixedScroll {
+  position: fixed;
+  left: 50%;
+  bottom: 102px;
+  transform: translateX(-50%);
+  width: min(720px, calc(100% - 34px));
+  z-index: 90;
+  background: rgba(18, 18, 18, 0.96);
+  border: 1px solid #303030;
+  border-radius: 999px;
+  padding: 8px;
+  display: grid;
+  grid-template-columns: 48px 1fr 48px;
+  gap: 8px;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.55);
+}
+
+.drawFixedScroll button {
+  border: 0;
+  border-radius: 999px;
+  background: var(--red);
+  color: white;
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.drawScrollHint {
+  background: #050505;
+  border: 1px solid #303030;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-weight: 900;
+  font-size: 13px;
+}
+.drawControls {
+  background: rgba(18, 18, 18, 0.98);
+  border: 1px solid #303030;
+  border-radius: 30px;
+  padding: 22px;
+  margin-bottom: 18px;
+  display: grid;
+  gap: 16px;
+}
+
+.drawControls label {
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.drawControls select {
+  width: 100%;
+  background: #050505;
+  color: white;
+  border: 2px solid #333;
+  border-radius: 18px;
+  padding: 14px 16px;
+  font-size: 16px;
+  font-weight: 850;
+}
+
+.drawToggle {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  background: #080808;
+  border: 1px solid #2d2d2d;
+  border-radius: 999px;
+  padding: 6px;
+}
+
+.drawToggle button {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: 13px;
+  border-radius: 999px;
+  font-weight: 950;
+}
+
+.drawToggle button.active {
+  background: var(--red);
+  color: white;
+}
+
+.drawTitleCard {
+  background: linear-gradient(135deg, rgba(20,20,20,.98), rgba(55,20,28,.98));
+  border: 1px solid #353535;
+  border-radius: 30px;
+  padding: 22px;
+  margin-bottom: 18px;
+}
+
+.drawTitleCard b {
+  color: white;
+  font-size: 30px;
+}
+
+.drawTitleCard span {
+  display: block;
+  color: var(--muted);
+  font-weight: 850;
+  margin-top: 6px;
+}
+
+.drawFixedScroll {
+  position: fixed;
+  left: 50%;
+  bottom: 170px;
+  transform: translateX(-50%);
+  width: min(720px, calc(100% - 34px));
+  z-index: 9999;
+  background: rgba(18, 18, 18, 0.98);
+  border: 1px solid #303030;
+  border-radius: 999px;
+  padding: 8px;
+  display: grid;
+  grid-template-columns: 48px 1fr 48px;
+  gap: 8px;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.75);
+}
+
+.drawFixedScroll button {
+  border: 0;
+  border-radius: 999px;
+  background: var(--red);
+  color: white;
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.drawScrollHint {
+  background: #050505;
+  border: 1px solid #303030;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-weight: 900;
+  font-size: 13px;
+}

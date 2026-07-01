@@ -1,106 +1,111 @@
-.filterBox {
-  background: var(--card);
-  color: white;
-  border: 1px solid var(--line);
-  border-radius: 26px;
-  padding: 18px;
-  margin-bottom: 18px;
+.playerFilters {
+  background: rgba(20, 20, 20, 0.96);
+  border: 1px solid #2b2b2b;
+  border-radius: 30px;
+  padding: 22px;
+  margin-bottom: 22px;
   display: grid;
-  gap: 14px;
-  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.35);
+  gap: 16px;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.35);
 }
 
-.filterBox input {
+.playerFilters input {
+  width: 100%;
+  background: #050505;
+  color: white;
+  border: 2px solid #333;
+  border-radius: 20px;
+  padding: 16px 18px;
+  font-size: 17px;
+  font-weight: 850;
+  outline: none;
+}
+
+.playerFilters input::placeholder {
+  color: #8b93a7;
+}
+
+.playerFilters input:focus {
+  border-color: var(--red);
+}
+
+.filterSelects {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.filterSelects label {
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.filterSelects select {
   width: 100%;
   background: #050505;
   color: white;
   border: 2px solid #333;
   border-radius: 18px;
   padding: 14px 16px;
-  font-weight: 800;
+  font-size: 16px;
+  font-weight: 850;
   outline: none;
 }
 
-.filterBox input:focus {
+.filterSelects select:focus {
   border-color: var(--red);
 }
 
-.chips {
+.playersList {
+  display: grid;
+  gap: 14px;
+}
+
+.playerCard {
+  background: rgba(20, 20, 20, 0.96);
+  border: 1px solid #2b2b2b;
+  border-radius: 24px;
+  padding: 18px;
+  display: grid;
+  gap: 14px;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.35);
+}
+
+.playerCard h3 {
+  margin: 0;
+  color: white;
+  font-size: 24px;
+}
+
+.playerCard p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.playerMeta {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-.chips button {
-  border: 1px solid #333;
+.playerMeta span {
   background: #151515;
+  border: 1px solid #303030;
   color: white;
-  padding: 10px 14px;
   border-radius: 999px;
-  font-weight: 900;
-  cursor: pointer;
-}
-
-.chips button.activeChip {
-  background: var(--red);
-  color: white;
-  border-color: var(--red);
-}
-
-.players {
-  display: grid;
-  gap: 12px;
-}
-
-.player {
-  background: var(--card);
-  color: white;
-  border: 1px solid var(--line);
-  border-radius: 22px;
-  padding: 18px;
-  display: grid;
-  gap: 6px;
-  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.35);
-}
-
-.player b {
-  font-size: 20px;
-}
-
-.player span {
-  color: var(--red-light);
-  font-weight: 900;
-}
-
-.player button {
-  width: fit-content;
-  border: 0;
-  background: #2a1018;
-  color: var(--red-light);
   padding: 8px 12px;
-  border-radius: 999px;
   font-weight: 900;
-  cursor: pointer;
 }
 
-.player small,
-.emptyState span {
-  color: var(--muted);
-  font-weight: 700;
-}
+@media (max-width: 650px) {
+  .filterSelects {
+    grid-template-columns: 1fr;
+  }
 
-.emptyState {
-  background: var(--card);
-  color: white;
-  border: 1px solid var(--line);
-  border-radius: 26px;
-  padding: 28px;
-  text-align: center;
-  display: grid;
-  gap: 8px;
-  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.35);
-}
-
-.emptyState b {
-  font-size: 22px;
+  .playerCard h3 {
+    font-size: 21px;
+  }
 }

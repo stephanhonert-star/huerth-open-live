@@ -5,6 +5,7 @@ import { matches } from "./data/matches";
 import { players } from "./data/players";
 import Admin from "./pages/Admin";
 import Courts from "./pages/Courts";
+import Draws from "./pages/Draws";
 import Gastro from "./pages/Gastro";
 import Home from "./pages/Home";
 import Players from "./pages/Players";
@@ -21,6 +22,9 @@ import "./styles/players.css";
 import "./styles/gastro.css";
 import "./styles/schedule.css";
 import "./styles/courts.css";
+import "./styles/court-overview.css";
+import "./styles/draws.css";
+import "./styles/draw/draw.css";
 import "./styles/pdf-import.css";
 import "./styles/admin.css";
 import "./styles/audio-player.css";
@@ -59,7 +63,8 @@ function App() {
   const done = matches.filter((match) => match.status === "done");
 
   const clubs = ["Alle", ...Array.from(new Set(players.map((player) => player.club)))];
-  const shownPlayers = club === "Alle" ? players : players.filter((player) => player.club === club);
+  const shownPlayers =
+    club === "Alle" ? players : players.filter((player) => player.club === club);
 
   return (
     <div className="app">
@@ -81,8 +86,15 @@ function App() {
 
         {tab === "plan" && <Schedule matches={matches} players={players} />}
 
+        {tab === "draws" && <Draws />}
+
         {tab === "teilnehmer" && (
-          <Players players={shownPlayers} clubs={clubs} selectedClub={club} onSelectClub={setClub} />
+          <Players
+            players={shownPlayers}
+            clubs={clubs}
+            selectedClub={club}
+            onSelectClub={setClub}
+          />
         )}
 
         {tab === "gastro" && <Gastro />}

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Play, RotateCcw, Trash2, Trophy } from "lucide-react";
 import ResultDialog from "../components/admin/ResultDialog";
 import PdfImport from "./PdfImport";
+import PdfDrawImport from "./PdfDrawImport";
 import { matches as defaultMatches } from "../data/matches";
 import type { Match } from "../types";
 import { loadDraws, resetDraws, updateDrawAfterResult } from "../services/drawProgression";
@@ -326,6 +327,7 @@ function Admin() {
         />
       )}
 
+      <PdfDrawImport />
       <PdfImport />
     </>
   );

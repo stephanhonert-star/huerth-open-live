@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { Play, RotateCcw, Trash2, Trophy } from "lucide-react";
+import { FileUp, Play, RotateCcw, Square, Trash2, Trophy, Users } from "lucide-react";
 import ResultDialog from "../components/admin/ResultDialog";
-import PdfImport from "./PdfImport";
-import PdfDrawImport from "./PdfDrawImport";
 import { matches as defaultMatches } from "../data/matches";
-import type { Match } from "../types";
-import { loadDraws, resetDraws, updateDrawAfterResult } from "../services/drawProgression";
+import type { Match, Player } from "../types";
+import { loadDraws, resetDraws, saveDraws, updateDrawAfterResult } from "../services/drawProgression";
+import { parseDrawFromPdf } from "../services/pdfDrawParser";
+import { parsePlayersFromPdf } from "../services/pdfPlayerParser";
 
 const ADMIN_PASSWORD = "huerth2026";
 const MATCH_STORAGE_KEY = "huerthOpenMatches";
@@ -13,7 +13,6 @@ const PLAYER_STORAGE_KEY = "huerthOpenPlayers";
 
 function loadMatches(): Match[] {
   const saved = localStorage.getItem(MATCH_STORAGE_KEY);
-
   if (!saved) return defaultMatches;
 
   try {
@@ -26,6 +25,101 @@ function loadMatches(): Match[] {
 function saveMatches(matches: Match[]) {
   localStorage.setItem(MATCH_STORAGE_KEY, JSON.stringify(matches));
   window.dispatchEvent(new Event("huerthOpenMatchesUpdated"));
+}
+
+function loadPlayers(): Player[] {
+  const saved = localStorage.getItem(PLAYER_STORAGE_KEY);
+
+  if (!saved) return [];
+
+  try {
+    return JSON.parse(saved) as Player[];
+  } catch {
+    return [];
+  }
+}
+
+function savePlayers(players: Player[]) {
+  localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(players));
+  window.dispatchEvent(new Event("huerthOpenPlayersUpdated"));
+}
+
+function getDatePart(time: string) {
+  return time.includes(".") ? time.split(" ")[0] : "Ohne Datum";
+}
+
+function getTimePart(time: string) {
+  return time.includes(".") ? time.split(" ").slice(1).join(" ") : time;
+}
+
+function dateSortValue(date: string) {
+  if (date === "Ohne Datum") return 999999;
+
+  const parts = date.split(".");
+  const day = Number(parts[0]);
+  const month = Number(parts[1]);
+
+  return month * 100 + day;
+}
+
+function timeSortValue(time: string) {
+  const date = getDatePart(time);
+  const clock = getTimePart(time).replace("Uhr", "").trim();
+  const [hour, minute] = clock.split(":").map(Number);
+
+  return dateSortValue(date) * 10000 + (hour || 0) * 100 + (minute || 0);
+}
+
+function statusSortValue(status: Match["status"]) {
+  if (status === "live") return 0;
+  if (status === "planned") return 1;
+  return 2;
+}
+
+function sortMatches(matches: Match[]) {
+  return [...matches].sort((a, b) => {
+    const statusDiff = statusSortValue(a.status) - statusSortValue(b.status);
+    if (statusDiff !== 0) return statusDiff;
+
+    const timeDiff = timeSortValue(a.time) - timeSortValue(b.time);
+    if (timeDiff !== 0) return timeDiff;
+
+    return a.court - b.court;
+  });
+}
+
+function isPlaceholderName(name: string) {
+  return (
+    name.includes("Sieger") ||
+    name.includes("Finalist") ||
+    name.includes("Verlierer") ||
+    name.includes("Turniersieger") ||
+    name === "offen"
+  );
+}
+
+function createPlayersFromDraw(result: Awaited<ReturnType<typeof parseDrawFromPdf>>): Player[] {
+  const players: Player[] = [];
+
+  result.draw.rounds.forEach((round) => {
+    round.matches.forEach((match) => {
+      [match.playerA, match.playerB].forEach((drawPlayer) => {
+        if (!drawPlayer) return;
+        if (isPlaceholderName(drawPlayer.name)) return;
+        if (players.some((player) => player.name === drawPlayer.name)) return;
+
+        players.push({
+          name: drawPlayer.name,
+          club: drawPlayer.club || "Unbekannter Verein",
+          lk: drawPlayer.lk || "-",
+          year: "-",
+          competition: result.draw.competition,
+        });
+      });
+    });
+  });
+
+  return players;
 }
 
 function getNextMatchInfo(drawMatchId?: string) {
@@ -55,6 +149,9 @@ function Admin() {
   const [error, setError] = useState("");
   const [matches, setMatches] = useState<Match[]>(loadMatches);
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
+  const [selectedDate, setSelectedDate] = useState("Alle");
+  const [importMessage, setImportMessage] = useState("");
+  const [loading, setLoading] = useState(false);
 
   function login(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -88,18 +185,67 @@ function Admin() {
     });
   }
 
-  function changeCourt(match: Match, court: number) {
+  function undoStartMatch(match: Match) {
     updateMatch({
       ...match,
-      court,
+      status: "planned",
+      since: "",
     });
   }
 
+  function changeCourt(match: Match, court: number) {
+    updateMatch({ ...match, court });
+  }
+
   function changeTime(match: Match, time: string) {
-    updateMatch({
-      ...match,
-      time,
-    });
+    updateMatch({ ...match, time });
+  }
+
+  async function importDrawPdf(file: File) {
+    setLoading(true);
+    setImportMessage("Auslosung wird importiert...");
+
+    try {
+      const result = await parseDrawFromPdf(file);
+      const importedPlayers = createPlayersFromDraw(result);
+
+      const existingDraws = loadDraws().filter((draw) => draw.id !== result.draw.id);
+      const existingMatches = matches.filter((match) => match.competition !== result.draw.competition);
+      const existingPlayers = loadPlayers().filter((player) => player.competition !== result.draw.competition);
+
+      const nextMatches = [...existingMatches, ...result.matches];
+      const nextPlayers = [...existingPlayers, ...importedPlayers];
+
+      saveDraws([...existingDraws, result.draw]);
+      setMatches(nextMatches);
+      saveMatches(nextMatches);
+      savePlayers(nextPlayers);
+
+      setImportMessage(
+        `${result.draw.competition} importiert · ${importedPlayers.length} Spieler · ${result.matches.length} Spiele`
+      );
+    } catch (error) {
+      console.error(error);
+      setImportMessage("Fehler beim Import der Auslosung");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function importPlayersPdf(file: File) {
+    setLoading(true);
+    setImportMessage("Teilnehmerliste wird importiert...");
+
+    try {
+      const result = await parsePlayersFromPdf(file);
+      savePlayers(result.players);
+      setImportMessage(`${result.players.length} Teilnehmer importiert`);
+    } catch (error) {
+      console.error(error);
+      setImportMessage("Fehler beim Import der Teilnehmerliste");
+    } finally {
+      setLoading(false);
+    }
   }
 
   function saveResult(result: string, winner: "A" | "B") {
@@ -143,6 +289,7 @@ function Admin() {
     resetDraws();
     setMatches(defaultMatches);
     window.dispatchEvent(new Event("huerthOpenMatchesUpdated"));
+    setSelectedDate("Alle");
   }
 
   function resetEverything() {
@@ -157,6 +304,7 @@ function Admin() {
 
     resetDraws();
     setMatches(defaultMatches);
+    setSelectedDate("Alle");
 
     window.dispatchEvent(new Event("huerthOpenMatchesUpdated"));
     window.dispatchEvent(new Event("huerthOpenPlayersUpdated"));
@@ -190,17 +338,69 @@ function Admin() {
     );
   }
 
+  const dates = Array.from(new Set(matches.map((match) => getDatePart(match.time)))).sort(
+    (a, b) => dateSortValue(a) - dateSortValue(b)
+  );
+
+  const visibleMatches =
+    selectedDate === "Alle"
+      ? matches
+      : matches.filter((match) => getDatePart(match.time) === selectedDate);
+
+  const sortedMatches = sortMatches(visibleMatches);
   const plannedMatches = matches.filter((match) => match.status === "planned");
   const liveMatches = matches.filter((match) => match.status === "live");
   const doneMatches = matches.filter((match) => match.status === "done");
 
   return (
     <>
-      <section className="pageHeader">
-        <p>⚙️ ADMIN</p>
-        <h2>Turnierverwaltung</h2>
-        <span>PDF-Import, Ergebnisse und Live-Steuerung</span>
+      <section className="pageHeader adminTopHeader">
+        <div>
+          <p>⚙️ ADMIN</p>
+          <h2>Turnierverwaltung</h2>
+          <span>PDF-Import, Ergebnisse und Live-Steuerung</span>
+        </div>
+
+        <div className="adminImportActions">
+          <label className="adminImportButton">
+            <FileUp size={18} />
+            Auslosung
+            <input
+              type="file"
+              accept="application/pdf"
+              onClick={(event) => {
+                event.currentTarget.value = "";
+              }}
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) importDrawPdf(file);
+              }}
+            />
+          </label>
+
+          <label className="adminImportButton">
+            <Users size={18} />
+            Teilnehmer
+            <input
+              type="file"
+              accept="application/pdf"
+              onClick={(event) => {
+                event.currentTarget.value = "";
+              }}
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) importPlayersPdf(file);
+              }}
+            />
+          </label>
+        </div>
       </section>
+
+      {(importMessage || loading) && (
+        <section className="adminImportStatus">
+          {loading ? "Bitte warten..." : importMessage}
+        </section>
+      )}
 
       <section className="adminGrid">
         <article>
@@ -239,8 +439,33 @@ function Admin() {
           </div>
         </div>
 
+        <section className="competitionChips">
+          <button
+            type="button"
+            className={selectedDate === "Alle" ? "active" : ""}
+            onClick={() => setSelectedDate("Alle")}
+          >
+            Alle <span>{matches.length}</span>
+          </button>
+
+          {dates.map((date) => {
+            const count = matches.filter((match) => getDatePart(match.time) === date).length;
+
+            return (
+              <button
+                type="button"
+                key={date}
+                className={selectedDate === date ? "active" : ""}
+                onClick={() => setSelectedDate(date)}
+              >
+                {date} <span>{count}</span>
+              </button>
+            );
+          })}
+        </section>
+
         <div className="adminMatchList">
-          {matches.map((match) => (
+          {sortedMatches.map((match) => (
             <article
               className={`adminMatchCard adminMatchCard-${match.status}`}
               key={`${match.drawMatchId}-${match.a}-${match.b}`}
@@ -288,8 +513,14 @@ function Admin() {
                   Uhrzeit ändern
                   <input
                     type="time"
-                    value={match.time}
-                    onChange={(event) => changeTime(match, event.target.value)}
+                    value={getTimePart(match.time)}
+                    onChange={(event) => {
+                      const date = getDatePart(match.time);
+                      const nextTime =
+                        date === "Ohne Datum" ? event.target.value : `${date} ${event.target.value}`;
+
+                      changeTime(match, nextTime);
+                    }}
                   />
                 </label>
               </div>
@@ -305,6 +536,13 @@ function Admin() {
                   <button type="button" onClick={() => startMatch(match)}>
                     <Play size={18} />
                     Spiel starten
+                  </button>
+                )}
+
+                {match.status === "live" && (
+                  <button type="button" onClick={() => undoStartMatch(match)}>
+                    <Square size={18} />
+                    Start rückgängig
                   </button>
                 )}
 
@@ -326,9 +564,6 @@ function Admin() {
           onClose={() => setSelectedMatch(null)}
         />
       )}
-
-      <PdfDrawImport />
-      <PdfImport />
     </>
   );
 }

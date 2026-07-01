@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import Header from "./components/Header";
 import Navigation from "./components/Navigation";
-import { matches as defaultMatches } from "./data/matches";
 import { players as defaultPlayers } from "./data/players";
 import Admin from "./pages/Admin";
 import Courts from "./pages/Courts";
@@ -54,13 +53,13 @@ function loadMatches(): Match[] {
   const savedMatches = localStorage.getItem(MATCH_STORAGE_KEY);
 
   if (!savedMatches) {
-    return defaultMatches;
+    return [];
   }
 
   try {
     return JSON.parse(savedMatches) as Match[];
   } catch {
-    return defaultMatches;
+    return [];
   }
 }
 

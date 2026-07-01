@@ -7,16 +7,52 @@ type CourtsProps = {
 
 const courts = [1, 2, 3, 4, 5, 6];
 
+function isPlaceholder(name: string) {
+  return (
+    name.includes("Sieger") ||
+    name.includes("Finalist") ||
+    name.includes("Verlierer") ||
+    name.includes("Turniersieger") ||
+    name === "offen"
+  );
+}
+
+function isRealMatch(match: Match) {
+  return !isPlaceholder(match.a) && !isPlaceholder(match.b);
+}
+
 function Courts({ matches }: CourtsProps) {
   const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null);
+  const [selectedCourt, setSelectedCourt] = useState<number | null>(null);
 
   function playerButton(name: string) {
     return (
-      <button className="playerNameButton" type="button" onClick={() => setSelectedPlayer(name)}>
+      <button
+        className="playerNameButton"
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation();
+          setSelectedPlayer(name);
+        }}
+      >
         {name}
       </button>
     );
   }
+
+  function closeModal() {
+    setSelectedPlayer(null);
+    setSelectedCourt(null);
+  }
+
+  const selectedCourtMatches =
+    selectedCourt === null
+      ? []
+      : matches
+          .filter((match) => match.court === selectedCourt)
+          .filter(isRealMatch)
+          .filter((match) => match.status !== "done")
+          .sort((a, b) => a.time.localeCompare(b.time));
 
   return (
     <>
@@ -26,20 +62,11 @@ function Courts({ matches }: CourtsProps) {
         <span>5 Matchplätze · Reserveplatz 6 bei Bedarf</span>
       </section>
 
-      {selectedPlayer && (
-        <section className="playerDetail">
-          <button type="button" onClick={() => setSelectedPlayer(null)}>
-            Schließen
-          </button>
-          <h2>{selectedPlayer}</h2>
-          <p>Spielerprofil</p>
-        </section>
-      )}
-
       <section className="courtGrid">
         {courts.map((court) => {
           const courtMatches = matches
             .filter((match) => match.court === court)
+            .filter(isRealMatch)
             .sort((a, b) => a.time.localeCompare(b.time));
 
           const liveMatch = courtMatches.find((match) => match.status === "live");
@@ -47,12 +74,21 @@ function Courts({ matches }: CourtsProps) {
 
           return (
             <article
-              className={`courtCard ${liveMatch ? "courtLive" : ""} ${court === 6 ? "courtReserve" : ""}`}
+              className={`courtCard ${liveMatch ? "courtLive" : ""} ${
+                court === 6 ? "courtReserve" : ""
+              }`}
               key={court}
+              onClick={() => setSelectedCourt(court)}
             >
               <div className="courtTop">
                 <b>Platz {court}</b>
-                {court === 6 ? <span>Reserve</span> : liveMatch ? <span>LIVE</span> : <span>Matchplatz</span>}
+                {court === 6 ? (
+                  <span>Reserve</span>
+                ) : liveMatch ? (
+                  <span>LIVE</span>
+                ) : (
+                  <span>Matchplatz</span>
+                )}
               </div>
 
               {liveMatch && (
@@ -79,13 +115,66 @@ function Courts({ matches }: CourtsProps) {
               {!liveMatch && !nextMatch && (
                 <div className="courtEmpty">
                   <strong>{court === 6 ? "Reserveplatz" : "frei"}</strong>
-                  <span>{court === 6 ? "Nur bei Bedarf eingeplant" : "Aktuell kein Spiel angesetzt"}</span>
+                  <span>
+                    {court === 6 ? "Nur bei Bedarf eingeplant" : "Aktuell kein Spiel angesetzt"}
+                  </span>
                 </div>
               )}
             </article>
           );
         })}
       </section>
+
+      {selectedCourt !== null && (
+        <div className="playerOverlay" onClick={closeModal}>
+          <article className="playerModal" onClick={(event) => event.stopPropagation()}>
+            <button className="modalClose" type="button" onClick={closeModal}>
+              ×
+            </button>
+
+            <small>Platzübersicht</small>
+            <h2>Platz {selectedCourt}</h2>
+
+            <div className="playerFacts">
+              {selectedCourtMatches.length > 0 ? (
+                selectedCourtMatches.map((match) => (
+                  <div key={`${match.time}-${match.a}-${match.b}`}>
+                    <span>{match.time} Uhr · {match.competition}</span>
+                    <b>
+                      {match.a} gegen {match.b}
+                    </b>
+                  </div>
+                ))
+              ) : (
+                <div>
+                  <span>Hinweis</span>
+                  <b>Keine weiteren Spiele angesetzt.</b>
+                </div>
+              )}
+            </div>
+          </article>
+        </div>
+      )}
+
+      {selectedPlayer && (
+        <div className="playerOverlay" onClick={closeModal}>
+          <article className="playerModal" onClick={(event) => event.stopPropagation()}>
+            <button className="modalClose" type="button" onClick={closeModal}>
+              ×
+            </button>
+
+            <small>Spielerprofil</small>
+            <h2>{selectedPlayer}</h2>
+
+            <div className="playerFacts">
+              <div>
+                <span>Hinweis</span>
+                <b>Spielerdetails werden aus der Teilnehmerliste geladen.</b>
+              </div>
+            </div>
+          </article>
+        </div>
+      )}
     </>
   );
 }

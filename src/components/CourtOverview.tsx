@@ -8,6 +8,37 @@ type CourtOverviewProps = {
 
 const courts = [1, 2, 3, 4, 5, 6];
 
+function formatMatchDate(time: string) {
+  if (!time.includes(".")) {
+    return `${time} Uhr`;
+  }
+
+  const [datePart, clockPart] = time.split(" ");
+  const [day, month] = datePart.split(".").map(Number);
+
+  const date = new Date(2026, month - 1, day);
+
+  const weekdays = [
+    "Sonntag",
+    "Montag",
+    "Dienstag",
+    "Mittwoch",
+    "Donnerstag",
+    "Freitag",
+    "Samstag",
+  ];
+
+  return `${weekdays[date.getDay()]}, ${datePart}.2026 · ${clockPart} Uhr`;
+}
+
+function getTimeOnly(time: string) {
+  if (!time.includes(".")) {
+    return time;
+  }
+
+  return time.split(" ").slice(1).join(" ");
+}
+
 function CourtOverview({ matches }: CourtOverviewProps) {
   const [selectedCourt, setSelectedCourt] = useState<number | null>(null);
 
@@ -56,7 +87,7 @@ function CourtOverview({ matches }: CourtOverviewProps) {
 
           <em>
             {centerCourtMatch.status === "live" && `🟢 läuft seit ${centerCourtMatch.since} Uhr`}
-            {centerCourtMatch.status === "planned" && `⏭️ angesetzt um ${centerCourtMatch.time} Uhr`}
+            {centerCourtMatch.status === "planned" && `📅 ${formatMatchDate(centerCourtMatch.time)}`}
             {centerCourtMatch.status === "done" && "🏆 beendet"}
           </em>
         </section>
@@ -82,7 +113,7 @@ function CourtOverview({ matches }: CourtOverviewProps) {
                 <b>Platz {court}</b>
                 {court === 6 && <span>Reserve</span>}
                 {court !== 6 && liveMatch && <span>LIVE</span>}
-                {court !== 6 && !liveMatch && nextMatch && <span>{nextMatch.time}</span>}
+                {court !== 6 && !liveMatch && nextMatch && <span>{getTimeOnly(nextMatch.time)}</span>}
                 {court !== 6 && !liveMatch && !nextMatch && <span>frei</span>}
               </div>
 
@@ -125,7 +156,7 @@ function CourtOverview({ matches }: CourtOverviewProps) {
                 selectedCourtMatches.map((match) => (
                   <article className={`courtTimelineItem ${match.status}`} key={`${match.time}-${match.court}-${match.a}`}>
                     <div className="courtTimelineTime">
-                      <b>{match.time}</b>
+                      <b>{formatMatchDate(match.time)}</b>
                       {match.status === "done" && <span>✅ beendet</span>}
                       {match.status === "live" && <span>🔴 live</span>}
                       {match.status === "planned" && <span>🟡 folgt</span>}

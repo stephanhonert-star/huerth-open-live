@@ -1,3 +1,4 @@
+import { useState } from "react";
 import Countdown from "../components/Countdown";
 import CourtOverview from "../components/CourtOverview";
 import MatchCard from "../components/MatchCard";
@@ -14,7 +15,38 @@ type HomeProps = {
   onChangeTab: (tab: Tab) => void;
 };
 
+function isPlaceholder(name: string) {
+  return (
+    name.includes("Sieger") ||
+    name.includes("Finalist") ||
+    name.includes("Verlierer") ||
+    name.includes("Turniersieger") ||
+    name === "offen"
+  );
+}
+
+function isRealMatch(match: Match) {
+  return !isPlaceholder(match.a) && !isPlaceholder(match.b);
+}
+
+function getDatePart(time: string) {
+  return time.includes(".") ? time.split(" ")[0] : "Ohne Datum";
+}
+
 function Home({ live, planned, allMatches, done, players, onChangeTab }: HomeProps) {
+  const realLive = live.filter(isRealMatch);
+  const realPlanned = planned.filter(isRealMatch);
+  const realDone = done.filter(isRealMatch);
+  const realMatches = allMatches.filter(isRealMatch);
+
+  const dates = Array.from(new Set(realPlanned.map((match) => getDatePart(match.time)))).sort();
+  const [selectedDate, setSelectedDate] = useState("Alle");
+
+  const visiblePlanned =
+    selectedDate === "Alle"
+      ? realPlanned
+      : realPlanned.filter((match) => getDatePart(match.time) === selectedDate);
+
   return (
     <>
       <Countdown />
@@ -54,21 +86,43 @@ function Home({ live, planned, allMatches, done, players, onChangeTab }: HomePro
       </section>
 
       <StatsCards
-        liveCount={live.length}
-        matchCount={allMatches.length}
+        liveCount={realLive.length}
+        matchCount={realMatches.length}
         playerCount={players.length}
         onChangeTab={onChangeTab}
       />
 
-      <CourtOverview matches={allMatches} />
+      <CourtOverview matches={realMatches} />
 
       <section className="sectionTitle">
         <p>GLEICH GEHT ES WEITER</p>
         <h2>⏭️ Als Nächstes</h2>
       </section>
 
+      <section className="competitionChips">
+        <button
+          type="button"
+          className={selectedDate === "Alle" ? "active" : ""}
+          onClick={() => setSelectedDate("Alle")}
+        >
+          Alle <span>{realPlanned.length}</span>
+        </button>
+
+        {dates.map((date) => (
+          <button
+            type="button"
+            key={date}
+            className={selectedDate === date ? "active" : ""}
+            onClick={() => setSelectedDate(date)}
+          >
+            {date}{" "}
+            <span>{realPlanned.filter((match) => getDatePart(match.time) === date).length}</span>
+          </button>
+        ))}
+      </section>
+
       <section className="cards">
-        {planned.map((match) => (
+        {visiblePlanned.map((match) => (
           <MatchCard key={`${match.time}-${match.court}-${match.a}`} match={match} />
         ))}
       </section>
@@ -79,7 +133,7 @@ function Home({ live, planned, allMatches, done, players, onChangeTab }: HomePro
       </section>
 
       <section className="cards">
-        {done.map((match) => (
+        {realDone.map((match) => (
           <MatchCard key={`${match.time}-${match.court}-${match.a}`} match={match} />
         ))}
       </section>

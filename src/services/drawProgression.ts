@@ -37,7 +37,6 @@ export function updateDrawAfterResult(
   result: string
 ): Draw[] {
   const draws = loadDraws();
-
   const currentMatch = findMatch(draws, drawMatchId);
 
   if (!currentMatch) return draws;
@@ -56,6 +55,42 @@ export function updateDrawAfterResult(
 
       if (currentMatch.nextSlot === "playerB") {
         nextMatch.playerB = { name: winnerName };
+      }
+    }
+  }
+
+  saveDraws(draws);
+  return draws;
+}
+
+export function undoDrawResult(drawMatchId: string): Draw[] {
+  const draws = loadDraws();
+  const currentMatch = findMatch(draws, drawMatchId);
+
+  if (!currentMatch) return draws;
+
+  const oldWinner = currentMatch.winner;
+
+  currentMatch.status = "planned";
+  currentMatch.result = "";
+  currentMatch.winner = "";
+
+  if (currentMatch.nextMatchId && currentMatch.nextSlot && oldWinner) {
+    const nextMatch = findMatch(draws, currentMatch.nextMatchId);
+
+    if (nextMatch) {
+      if (
+        currentMatch.nextSlot === "playerA" &&
+        nextMatch.playerA?.name === oldWinner
+      ) {
+        nextMatch.playerA = { name: `Sieger Match ${currentMatch.matchIndex}` };
+      }
+
+      if (
+        currentMatch.nextSlot === "playerB" &&
+        nextMatch.playerB?.name === oldWinner
+      ) {
+        nextMatch.playerB = { name: `Sieger Match ${currentMatch.matchIndex}` };
       }
     }
   }

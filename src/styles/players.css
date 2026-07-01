@@ -31,7 +31,7 @@
 
 .filterSelects {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 14px;
 }
 
@@ -58,6 +58,52 @@
   border-color: var(--red);
 }
 
+.competitionChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.competitionChips b {
+  width: 100%;
+  margin-top: 6px;
+  color: #80ffad;
+  font-size: 13px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.competitionChips button {
+  border: 1px solid #333;
+  background: #050505;
+  color: white;
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-weight: 950;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.competitionChips button span {
+  background: #252525;
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 12px;
+}
+
+.competitionChips button.active {
+  background: var(--red);
+  border-color: var(--red);
+  color: white;
+}
+
+.competitionChips button.active span {
+  background: rgba(255, 255, 255, 0.2);
+}
+
 .playersList {
   display: grid;
   gap: 14px;
@@ -71,6 +117,16 @@
   display: grid;
   gap: 14px;
   box-shadow: 0 14px 36px rgba(0, 0, 0, 0.35);
+}
+
+.clickablePlayerCard {
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.clickablePlayerCard:hover {
+  transform: translateY(-2px);
+  border-color: var(--red);
 }
 
 .playerCard h3 {
@@ -100,12 +156,86 @@
   font-weight: 900;
 }
 
-@media (max-width: 650px) {
-  .filterSelects {
-    grid-template-columns: 1fr;
-  }
+.playerModalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  z-index: 999;
+}
 
+.playerModal {
+  width: min(420px, 100%);
+  background: rgba(20, 20, 20, 0.98);
+  border: 1px solid #333;
+  border-radius: 30px;
+  padding: 28px;
+  color: white;
+  position: relative;
+  text-align: center;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+}
+
+.modalClose {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 999px;
+  background: #050505;
+  color: white;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.playerInitials {
+  width: 78px;
+  height: 78px;
+  border-radius: 999px;
+  background: var(--red);
+  color: white;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 16px;
+  font-size: 28px;
+  font-weight: 950;
+}
+
+.playerModal h2 {
+  margin: 0;
+  font-size: 30px;
+}
+
+.playerModal p {
+  margin: 8px 0 18px;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.playerModalMeta {
+  display: grid;
+  gap: 10px;
+}
+
+.playerModalMeta span {
+  background: #050505;
+  border: 1px solid #303030;
+  border-radius: 18px;
+  padding: 12px;
+  font-weight: 900;
+}
+
+@media (max-width: 650px) {
   .playerCard h3 {
     font-size: 21px;
+  }
+
+  .playerModal {
+    padding: 24px 18px;
   }
 }

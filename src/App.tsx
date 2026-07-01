@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import Header from "./components/Header";
 import Navigation from "./components/Navigation";
 import { matches } from "./data/matches";
-import { players } from "./data/players";
+import { players as defaultPlayers } from "./data/players";
 import Admin from "./pages/Admin";
 import Courts from "./pages/Courts";
 import Draws from "./pages/Draws";
@@ -10,7 +10,7 @@ import Gastro from "./pages/Gastro";
 import Home from "./pages/Home";
 import Players from "./pages/Players";
 import Schedule from "./pages/Schedule";
-import type { Tab } from "./types";
+import type { Player, Tab } from "./types";
 
 import "./styles/app.css";
 import "./styles/header.css";
@@ -33,9 +33,24 @@ function getInitialTab(): Tab {
   return window.location.hash === "#admin" ? "admin" : "start";
 }
 
+function loadPlayers(): Player[] {
+  const savedPlayers = localStorage.getItem("huerthOpenPlayers");
+
+  if (!savedPlayers) {
+    return defaultPlayers;
+  }
+
+  try {
+    return JSON.parse(savedPlayers) as Player[];
+  } catch {
+    return defaultPlayers;
+  }
+}
+
 function App() {
   const [tab, setTab] = useState<Tab>(getInitialTab);
   const [club, setClub] = useState("Alle");
+  const [players, setPlayers] = useState<Player[]>(loadPlayers);
 
   useEffect(() => {
     function handleHashChange() {
@@ -44,8 +59,18 @@ function App() {
       }
     }
 
+    function handlePlayersUpdated() {
+      setPlayers(loadPlayers());
+      setClub("Alle");
+    }
+
     window.addEventListener("hashchange", handleHashChange);
-    return () => window.removeEventListener("hashchange", handleHashChange);
+    window.addEventListener("huerthOpenPlayersUpdated", handlePlayersUpdated);
+
+    return () => {
+      window.removeEventListener("hashchange", handleHashChange);
+      window.removeEventListener("huerthOpenPlayersUpdated", handlePlayersUpdated);
+    };
   }, []);
 
   function changeTab(nextTab: Tab) {
@@ -62,7 +87,12 @@ function App() {
   const planned = matches.filter((match) => match.status === "planned");
   const done = matches.filter((match) => match.status === "done");
 
-  const clubs = ["Alle", ...Array.from(new Set(players.map((player) => player.club)))];
+  const clubs = [
+  "Alle",
+  ...Array.from(new Set(players.map((player) => player.club))).sort((a, b) =>
+    a.localeCompare(b, "de")
+  ),
+];
   const shownPlayers =
     club === "Alle" ? players : players.filter((player) => player.club === club);
 

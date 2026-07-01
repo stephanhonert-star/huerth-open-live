@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FileUp } from "lucide-react";
+import { CheckCircle, FileUp } from "lucide-react";
 import type { Player } from "../types";
 import { parsePlayersFromPdf } from "../services/pdfPlayerParser";
 
@@ -9,6 +9,7 @@ function PdfImport() {
   const [fileName, setFileName] = useState("");
   const [message, setMessage] = useState("");
   const [debugText, setDebugText] = useState("");
+  const [imported, setImported] = useState(false);
 
   async function handleFile(file: File) {
     setLoading(true);
@@ -16,6 +17,7 @@ function PdfImport() {
     setMessage("PDF wird gelesen...");
     setPlayers([]);
     setDebugText("");
+    setImported(false);
 
     try {
       const result = await parsePlayersFromPdf(file);
@@ -30,6 +32,20 @@ function PdfImport() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function importPlayers() {
+    localStorage.setItem("huerthOpenPlayers", JSON.stringify(players));
+    window.dispatchEvent(new Event("huerthOpenPlayersUpdated"));
+    setImported(true);
+    setMessage(`${players.length} Spieler wurden in die Teilnehmerliste übernommen`);
+  }
+
+  function resetImport() {
+    localStorage.removeItem("huerthOpenPlayers");
+    window.dispatchEvent(new Event("huerthOpenPlayersUpdated"));
+    setImported(false);
+    setMessage("Import wurde zurückgesetzt. Die Standard-Spielerliste ist wieder aktiv.");
   }
 
   return (
@@ -68,18 +84,20 @@ function PdfImport() {
         {fileName && <small className="fileName">Datei: {fileName}</small>}
         {message && <strong className="importLoading">{message}</strong>}
         {loading && <strong className="importLoading">Bitte warten...</strong>}
+
+        {players.length > 0 && (
+          <button className="pdfButton" type="button" onClick={importPlayers}>
+            <CheckCircle size={20} />
+            In Turnier übernehmen
+          </button>
+        )}
+
+        <button className="pdfResetButton" type="button" onClick={resetImport}>
+          Import zurücksetzen
+        </button>
+
+        {imported && <strong className="importLoading">✅ Teilnehmerliste aktualisiert</strong>}
       </section>
-
-      {debugText && (
-        <section className="importPreview">
-          <div className="importPreviewHeader">
-            <b>PDF-Rohtext</b>
-            <span>Kopiere mir bitte die ersten 30–50 Zeilen daraus.</span>
-          </div>
-
-          <pre className="debugText">{debugText}</pre>
-        </section>
-      )}
 
       {players.length > 0 && (
         <section className="importPreview">
@@ -99,6 +117,17 @@ function PdfImport() {
               </article>
             ))}
           </div>
+        </section>
+      )}
+
+      {debugText && (
+        <section className="importPreview">
+          <div className="importPreviewHeader">
+            <b>PDF-Rohtext</b>
+            <span>Nur zur Kontrolle</span>
+          </div>
+
+          <pre className="debugText">{debugText}</pre>
         </section>
       )}
     </>

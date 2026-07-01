@@ -1,9 +1,8 @@
 import * as pdfjsLib from "pdfjs-dist";
-import workerSrc from "pdfjs-dist/build/pdf.worker.mjs?url";
 import type { Draw, DrawMatch, DrawPlayer, DrawRound, DrawRoundName } from "../models/Draw";
 import type { Match } from "../types";
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@6.1.200/build/pdf.worker.mjs`;
 
 export type PdfDrawImportResult = {
   draw: Draw;
@@ -310,7 +309,9 @@ function createMatchesFromDraw(draw: Draw): Match[] {
 
 export async function parseDrawFromPdf(file: File): Promise<PdfDrawImportResult> {
   const buffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+  const pdf = await pdfjsLib.getDocument({
+    data: buffer,
+      }).promise;
 
   let debugText = "";
   const allLines: string[] = [];

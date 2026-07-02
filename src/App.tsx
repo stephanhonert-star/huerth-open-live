@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { doc, onSnapshot } from "firebase/firestore";
 import Header from "./components/Header";
 import Navigation from "./components/Navigation";
 import { players as defaultPlayers } from "./data/players";
@@ -9,6 +10,7 @@ import Gastro from "./pages/Gastro";
 import Home from "./pages/Home";
 import Players from "./pages/Players";
 import Schedule from "./pages/Schedule";
+import { db } from "./services/firebase";
 import type { Match, Player, Tab } from "./types";
 
 import "./styles/app.css";
@@ -68,6 +70,26 @@ function App() {
   const [club, setClub] = useState("Alle");
   const [players, setPlayers] = useState<Player[]>(loadPlayers);
   const [matches, setMatches] = useState<Match[]>(loadMatches);
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(doc(db, "huerthOpen", "live"), (snapshot) => {
+      const data = snapshot.data();
+
+      if (!data) return;
+
+      if (Array.isArray(data.players)) {
+        setPlayers(data.players as Player[]);
+        localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(data.players));
+      }
+
+      if (Array.isArray(data.matches)) {
+        setMatches(data.matches as Match[]);
+        localStorage.setItem(MATCH_STORAGE_KEY, JSON.stringify(data.matches));
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     function handleHashChange() {

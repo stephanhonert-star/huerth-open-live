@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { doc, setDoc } from "firebase/firestore";
 import { FileUp, Play, RotateCcw, Square, Trash2, Trophy, Users } from "lucide-react";
 import ResultDialog from "../components/admin/ResultDialog";
 import { matches as defaultMatches } from "../data/matches";
 import type { Match, Player } from "../types";
+import { db } from "../services/firebase";
 import { loadDraws, resetDraws, saveDraws, updateDrawAfterResult } from "../services/drawProgression";
 import { parseDrawFromPdf } from "../services/pdfDrawParser";
 import { parsePlayersFromPdf } from "../services/pdfPlayerParser";
@@ -10,6 +12,22 @@ import { parsePlayersFromPdf } from "../services/pdfPlayerParser";
 const ADMIN_PASSWORD = "huerth2026";
 const MATCH_STORAGE_KEY = "huerthOpenMatches";
 const PLAYER_STORAGE_KEY = "huerthOpenPlayers";
+
+function cleanForFirebase<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+async function publishLiveData(matches: Match[], players: Player[]) {
+  await setDoc(
+    doc(db, "huerthOpen", "live"),
+    cleanForFirebase({
+      matches,
+      players,
+      draws: loadDraws(),
+      updatedAt: new Date().toISOString(),
+    })
+  );
+}
 
 function loadMatches(): Match[] {
   const saved = localStorage.getItem(MATCH_STORAGE_KEY);
@@ -165,13 +183,14 @@ function Admin() {
     setError("Falsches Passwort");
   }
 
-  function updateMatch(updatedMatch: Match) {
+  async function updateMatch(updatedMatch: Match) {
     const nextMatches = matches.map((match) =>
       match.drawMatchId === updatedMatch.drawMatchId ? updatedMatch : match
     );
 
     setMatches(nextMatches);
     saveMatches(nextMatches);
+    await publishLiveData(nextMatches, loadPlayers());
   }
 
   function startMatch(match: Match) {
@@ -213,13 +232,16 @@ function Admin() {
       const existingMatches = matches.filter((match) => match.competition !== result.draw.competition);
       const existingPlayers = loadPlayers().filter((player) => player.competition !== result.draw.competition);
 
+      const nextDraws = [...existingDraws, result.draw];
       const nextMatches = [...existingMatches, ...result.matches];
       const nextPlayers = [...existingPlayers, ...importedPlayers];
 
-      saveDraws([...existingDraws, result.draw]);
+      saveDraws(nextDraws);
       setMatches(nextMatches);
       saveMatches(nextMatches);
       savePlayers(nextPlayers);
+
+      await publishLiveData(nextMatches, nextPlayers);
 
       setImportMessage(
         `${result.draw.competition} importiert · ${importedPlayers.length} Spieler · ${result.matches.length} Spiele`
@@ -239,6 +261,7 @@ function Admin() {
     try {
       const result = await parsePlayersFromPdf(file);
       savePlayers(result.players);
+      await publishLiveData(matches, result.players);
       setImportMessage(`${result.players.length} Teilnehmer importiert`);
     } catch (error) {
       console.error(error);
@@ -248,7 +271,7 @@ function Admin() {
     }
   }
 
-  function saveResult(result: string, winner: "A" | "B") {
+  async function saveResult(result: string, winner: "A" | "B") {
     if (!selectedMatch) return;
 
     const winnerName = winner === "A" ? selectedMatch.a : selectedMatch.b;
@@ -281,18 +304,21 @@ function Admin() {
       updateDrawAfterResult(selectedMatch.drawMatchId, winnerName, result);
     }
 
+    await publishLiveData(nextMatches, loadPlayers());
+
     setSelectedMatch(null);
   }
 
-  function resetMatches() {
+  async function resetMatches() {
     localStorage.removeItem(MATCH_STORAGE_KEY);
     resetDraws();
     setMatches(defaultMatches);
-    window.dispatchEvent(new Event("huerthOpenMatchesUpdated"));
     setSelectedDate("Alle");
+    window.dispatchEvent(new Event("huerthOpenMatchesUpdated"));
+    await publishLiveData(defaultMatches, loadPlayers());
   }
 
-  function resetEverything() {
+  async function resetEverything() {
     const confirmed = window.confirm(
       "Wirklich alle importierten Spieler und gespeicherten Ergebnisse löschen?"
     );
@@ -308,6 +334,8 @@ function Admin() {
 
     window.dispatchEvent(new Event("huerthOpenMatchesUpdated"));
     window.dispatchEvent(new Event("huerthOpenPlayersUpdated"));
+
+    await publishLiveData(defaultMatches, []);
   }
 
   if (!unlocked) {

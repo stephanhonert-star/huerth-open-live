@@ -36,7 +36,7 @@
 .eventStats {
   margin-top: 26px;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 12px;
 }
 
@@ -47,6 +47,12 @@
   padding: 18px;
   display: grid;
   gap: 4px;
+  transition: 0.2s;
+}
+
+.eventStats div:hover {
+  transform: translateY(-3px);
+  background: rgba(255, 255, 255, 0.09);
 }
 
 .eventStats b {
@@ -76,6 +82,66 @@
   font-weight: 900;
 }
 
+.liveTicker {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin: 0 0 28px;
+}
+
+.tickerItem {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    radial-gradient(circle at top right, rgba(255, 73, 104, 0.13), transparent 10rem),
+    linear-gradient(135deg, #191919, #101010);
+  border-radius: 22px;
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  color: white;
+  cursor: pointer;
+  transition: 0.2s;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+  text-align: left;
+}
+
+.tickerItem:hover {
+  transform: translateY(-4px);
+  border-color: var(--red);
+}
+
+.tickerItem > span {
+  font-size: 34px;
+  line-height: 1;
+}
+
+.tickerItem div {
+  display: grid;
+  gap: 3px;
+}
+
+.tickerItem b {
+  font-size: 22px;
+  line-height: 1.1;
+  color: white;
+}
+
+.tickerItem small {
+  color: var(--muted);
+  font-weight: 900;
+}
+
+@media (max-width: 950px) {
+  .liveTicker {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .eventStats {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
 @media (max-width: 760px) {
   .eventHero h1 {
     font-size: 40px;
@@ -93,5 +159,17 @@
 
   .eventHero h1 {
     font-size: 34px;
+  }
+
+  .eventStats {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .liveTicker {
+    grid-template-columns: 1fr;
+  }
+
+  .tickerItem b {
+    font-size: 20px;
   }
 }

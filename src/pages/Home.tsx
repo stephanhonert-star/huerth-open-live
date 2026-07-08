@@ -2,7 +2,6 @@ import { useState } from "react";
 import Countdown from "../components/Countdown";
 import CourtOverview from "../components/CourtOverview";
 import MatchCard from "../components/MatchCard";
-import StatsCards from "../components/StatsCards";
 import { tournamentStore } from "../store/tournamentStore";
 import type { Match, Player, Tab } from "../types";
 
@@ -35,6 +34,18 @@ function isRealMatch(match: Match) {
 
 function getDatePart(time: string) {
   return time.includes(".") ? time.split(" ")[0] : "Ohne Datum";
+}
+
+function getTimePart(time: string) {
+  return time.includes(".") ? time.split(" ").slice(1).join(" ") : time;
+}
+
+function getNextMatchText(matches: Match[]) {
+  if (matches.length === 0) return "Kein Spiel geplant";
+
+  const next = [...matches].sort((a, b) => a.time.localeCompare(b.time))[0];
+
+  return `${getTimePart(next.time)} · Platz ${next.court}`;
 }
 
 function Home({
@@ -115,12 +126,39 @@ function Home({
         </div>
       </section>
 
-      <StatsCards
-        liveCount={realLive.length}
-        matchCount={realMatches.length}
-        playerCount={players.length}
-        onChangeTab={onChangeTab}
-      />
+      <section className="liveTicker">
+        <button className="tickerItem" onClick={() => onChangeTab("plan")}>
+          <span>🎾</span>
+          <div>
+            <b>{realPlanned.length}</b>
+            <small>Geplante Spiele</small>
+          </div>
+        </button>
+
+        <button className="tickerItem" onClick={() => onChangeTab("courts")}>
+          <span>🟢</span>
+          <div>
+            <b>{realLive.length}</b>
+            <small>Live auf Platz</small>
+          </div>
+        </button>
+
+        <button className="tickerItem" onClick={() => onChangeTab("start")}>
+          <span>🏆</span>
+          <div>
+            <b>{realDone.length}</b>
+            <small>Beendet</small>
+          </div>
+        </button>
+
+        <button className="tickerItem" onClick={() => onChangeTab("plan")}>
+          <span>⏰</span>
+          <div>
+            <b>{getNextMatchText(realPlanned)}</b>
+            <small>Nächstes Match</small>
+          </div>
+        </button>
+      </section>
 
       <CourtOverview matches={realMatches} />
 

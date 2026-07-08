@@ -39,13 +39,26 @@ function getTimeOnly(time: string) {
   return time.split(" ").slice(1).join(" ");
 }
 
+function getCourtStatus(matches: Match[], court: number) {
+  const courtMatches = matches
+    .filter((match) => match.court === court)
+    .sort((a, b) => a.time.localeCompare(b.time));
+
+  const liveMatch = courtMatches.find((match) => match.status === "live");
+  const nextMatch = courtMatches.find((match) => match.status === "planned");
+  const latestDone = [...courtMatches].reverse().find((match) => match.status === "done");
+
+  return {
+    courtMatches,
+    liveMatch,
+    nextMatch,
+    latestDone,
+    shownMatch: liveMatch || nextMatch || latestDone,
+  };
+}
+
 function CourtOverview({ matches }: CourtOverviewProps) {
   const [selectedCourt, setSelectedCourt] = useState<number | null>(null);
-
-  const centerCourtMatch =
-    matches.find((match) => match.court === 1 && match.status === "live") ||
-    matches.find((match) => match.court === 1 && match.status === "planned") ||
-    matches.find((match) => match.court === 1);
 
   const selectedCourtMatches = selectedCourt
     ? matches
@@ -53,81 +66,70 @@ function CourtOverview({ matches }: CourtOverviewProps) {
         .sort((a, b) => a.time.localeCompare(b.time))
     : [];
 
-  function getCourtStatus(court: number) {
-    const courtMatches = matches.filter((match) => match.court === court);
-    const liveMatch = courtMatches.find((match) => match.status === "live");
-    const nextMatch = courtMatches.find((match) => match.status === "planned");
-    const latestDone = [...courtMatches].reverse().find((match) => match.status === "done");
-
-    return {
-      liveMatch,
-      nextMatch,
-      latestDone,
-      shownMatch: liveMatch || nextMatch || latestDone,
-    };
-  }
-
   return (
     <>
-      {centerCourtMatch && (
-        <section className={`centerCourtHero ${centerCourtMatch.status === "live" ? "isLive" : ""}`}>
-          <p>🎾 CENTER COURT</p>
-          <h2>Platz 1</h2>
-          <span>{centerCourtMatch.competition}</span>
-
-          {centerCourtMatch.status === "done" && centerCourtMatch.result ? (
-            <ResultScore playerA={centerCourtMatch.a} playerB={centerCourtMatch.b} result={centerCourtMatch.result} />
-          ) : (
-            <div className="centerCourtPlayers">
-              <strong>{centerCourtMatch.a}</strong>
-              <small>gegen</small>
-              <strong>{centerCourtMatch.b}</strong>
-            </div>
-          )}
-
-          <em>
-            {centerCourtMatch.status === "live" && `🟢 läuft seit ${centerCourtMatch.since} Uhr`}
-            {centerCourtMatch.status === "planned" && `📅 ${formatMatchDate(centerCourtMatch.time)}`}
-            {centerCourtMatch.status === "done" && "🏆 beendet"}
-          </em>
-        </section>
-      )}
-
-      <section className="sectionTitle">
+      <section className="sectionTitle courtBroadcastTitle">
         <p>HEUTE AUF DER ANLAGE</p>
         <h2>🎾 Platzübersicht</h2>
       </section>
 
-      <section className="courtOverviewGrid">
+      <section className="courtBroadcastGrid">
         {courts.map((court) => {
-          const { liveMatch, nextMatch, shownMatch } = getCourtStatus(court);
+          const { liveMatch, nextMatch, shownMatch } = getCourtStatus(matches, court);
 
           return (
             <button
               type="button"
-              className={`courtMiniCard ${liveMatch ? "miniLive" : ""} ${court === 6 ? "miniReserve" : ""}`}
+              className={`courtBroadcastCard ${liveMatch ? "isLive" : ""} ${
+                court === 6 ? "isReserve" : ""
+              }`}
               key={court}
               onClick={() => setSelectedCourt(court)}
             >
-              <div className="courtMiniTop">
-                <b>Platz {court}</b>
-                {court === 6 && <span>Reserve</span>}
-                {court !== 6 && liveMatch && <span>LIVE</span>}
-                {court !== 6 && !liveMatch && nextMatch && <span>{getTimeOnly(nextMatch.time)}</span>}
-                {court !== 6 && !liveMatch && !nextMatch && <span>frei</span>}
+              <div className="courtBroadcastTop">
+                <div>
+                  <b>Platz {court}</b>
+                  {court === 6 && <small>Reserveplatz</small>}
+                  {court !== 6 && liveMatch && <small>läuft gerade</small>}
+                  {court !== 6 && !liveMatch && nextMatch && (
+                    <small>als Nächstes {getTimeOnly(nextMatch.time)} Uhr</small>
+                  )}
+                  {court !== 6 && !liveMatch && !nextMatch && <small>aktuell frei</small>}
+                </div>
+
+                {liveMatch && <span className="courtPill live">LIVE</span>}
+                {!liveMatch && nextMatch && <span className="courtPill next">NÄCHSTES</span>}
+                {!liveMatch && !nextMatch && <span className="courtPill free">FREI</span>}
               </div>
 
               {shownMatch ? (
-                <>
+                <div className="courtBroadcastMatch">
                   <small>{shownMatch.competition}</small>
-                  <strong>{shownMatch.a}</strong>
-                  <p>vs</p>
-                  <strong>{shownMatch.b}</strong>
-                </>
+
+                  {shownMatch.status === "done" && shownMatch.result ? (
+                    <ResultScore
+                      playerA={shownMatch.a}
+                      playerB={shownMatch.b}
+                      result={shownMatch.result}
+                    />
+                  ) : (
+                    <>
+                      <strong>{shownMatch.a}</strong>
+                      <span>gegen</span>
+                      <strong>{shownMatch.b}</strong>
+                    </>
+                  )}
+
+                  <em>
+                    {shownMatch.status === "live" && `läuft seit ${shownMatch.since} Uhr`}
+                    {shownMatch.status === "planned" && formatMatchDate(shownMatch.time)}
+                    {shownMatch.status === "done" && "beendet"}
+                  </em>
+                </div>
               ) : (
-                <div className="courtMiniEmpty">
+                <div className="courtBroadcastEmpty">
                   <strong>{court === 6 ? "Reserveplatz" : "Aktuell frei"}</strong>
-                  <small>{court === 6 ? "nur bei Bedarf" : "kein Spiel angesetzt"}</small>
+                  <span>{court === 6 ? "nur bei Bedarf" : "kein Spiel angesetzt"}</span>
                 </div>
               )}
             </button>
@@ -154,7 +156,10 @@ function CourtOverview({ matches }: CourtOverviewProps) {
             <div className="courtTimeline">
               {selectedCourtMatches.length > 0 ? (
                 selectedCourtMatches.map((match) => (
-                  <article className={`courtTimelineItem ${match.status}`} key={`${match.time}-${match.court}-${match.a}`}>
+                  <article
+                    className={`courtTimelineItem ${match.status}`}
+                    key={`${match.time}-${match.court}-${match.a}`}
+                  >
                     <div className="courtTimelineTime">
                       <b>{formatMatchDate(match.time)}</b>
                       {match.status === "done" && <span>✅ beendet</span>}
@@ -166,7 +171,11 @@ function CourtOverview({ matches }: CourtOverviewProps) {
                       <small>{match.competition}</small>
 
                       {match.status === "done" && match.result ? (
-                        <ResultScore playerA={match.a} playerB={match.b} result={match.result} />
+                        <ResultScore
+                          playerA={match.a}
+                          playerB={match.b}
+                          result={match.result}
+                        />
                       ) : (
                         <>
                           <strong>{match.a}</strong>
@@ -182,7 +191,11 @@ function CourtOverview({ matches }: CourtOverviewProps) {
               ) : (
                 <div className="courtNoMatches">
                   <b>{selectedCourt === 6 ? "Reserveplatz" : "Keine Spiele"}</b>
-                  <span>{selectedCourt === 6 ? "Dieser Platz wird nur bei Bedarf genutzt." : "Für diesen Platz sind aktuell keine Spiele hinterlegt."}</span>
+                  <span>
+                    {selectedCourt === 6
+                      ? "Dieser Platz wird nur bei Bedarf genutzt."
+                      : "Für diesen Platz sind aktuell keine Spiele hinterlegt."}
+                  </span>
                 </div>
               )}
             </div>

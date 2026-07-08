@@ -1,148 +1,149 @@
-.centerCourtHero {
-  background:
-    radial-gradient(circle at top right, rgba(255, 73, 104, 0.22), transparent 20rem),
-    linear-gradient(135deg, rgba(18, 18, 18, 0.98), rgba(42, 16, 24, 0.98));
-  border: 1px solid #333;
-  border-radius: 34px;
-  padding: 30px;
-  margin-bottom: 18px;
-  text-align: center;
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+.courtBroadcastTitle {
+  margin-top: 10px;
 }
 
-.centerCourtHero.isLive {
-  border: 2px solid var(--green);
-  box-shadow: 0 24px 70px rgba(24, 169, 87, 0.18);
-}
-
-.centerCourtHero p {
-  margin: 0 0 8px;
-  color: #80ffad;
-  font-weight: 950;
-  letter-spacing: 0.12em;
-  font-size: 13px;
-}
-
-.centerCourtHero h2 {
-  margin: 0;
-  font-size: 46px;
-  letter-spacing: -0.04em;
-}
-
-.centerCourtHero > span {
-  display: block;
-  margin-top: 8px;
-  color: var(--red-light);
-  font-weight: 950;
-}
-
-.centerCourtPlayers {
-  margin: 24px 0 18px;
-  display: grid;
-  gap: 8px;
-}
-
-.centerCourtPlayers strong {
-  font-size: 34px;
-  color: white;
-}
-
-.centerCourtPlayers small {
-  color: var(--muted);
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-.centerCourtHero em {
-  display: inline-block;
-  background: #102c1b;
-  color: #80ffad;
-  padding: 10px 14px;
-  border-radius: 999px;
-  font-style: normal;
-  font-weight: 950;
-}
-
-.courtOverviewGrid {
+.courtBroadcastGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 14px;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
-.courtMiniCard {
-  background: rgba(20, 20, 20, 0.96);
+.courtBroadcastCard {
+  position: relative;
+  overflow: hidden;
+  min-height: 235px;
+  background:
+    radial-gradient(circle at top right, rgba(255, 73, 104, 0.12), transparent 12rem),
+    linear-gradient(135deg, rgba(20, 20, 20, 0.98), rgba(12, 12, 12, 0.98));
   border: 1px solid #2b2b2b;
-  border-radius: 24px;
-  padding: 18px;
+  border-radius: 28px;
+  padding: 22px;
   display: grid;
-  gap: 7px;
-  min-height: 210px;
-  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.35);
+  gap: 18px;
   text-align: left;
   cursor: pointer;
   transition: 0.2s;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42);
 }
 
-.courtMiniCard:hover {
-  transform: translateY(-3px);
+.courtBroadcastCard::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 6px;
+  background: var(--red);
+  opacity: 0.95;
+}
+
+.courtBroadcastCard:hover {
+  transform: translateY(-4px);
   border-color: var(--red);
 }
 
-.courtMiniCard.miniLive {
-  border: 2px solid var(--green);
+.courtBroadcastCard.isLive {
+  border-color: rgba(128, 255, 173, 0.55);
+  box-shadow: 0 18px 46px rgba(24, 169, 87, 0.16);
 }
 
-.courtMiniCard.miniReserve {
+.courtBroadcastCard.isLive::before {
+  background: var(--green);
+}
+
+.courtBroadcastCard.isReserve {
   border-style: dashed;
 }
 
-.courtMiniTop {
+.courtBroadcastTop {
   display: flex;
   justify-content: space-between;
-  gap: 10px;
-  align-items: center;
-  margin-bottom: 6px;
+  align-items: flex-start;
+  gap: 14px;
 }
 
-.courtMiniTop b {
+.courtBroadcastTop b {
   color: white;
-  font-size: 20px;
+  font-size: 26px;
+  line-height: 1;
 }
 
-.courtMiniTop span {
-  background: var(--red);
-  color: white;
+.courtBroadcastTop small {
+  display: block;
+  margin-top: 7px;
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.courtPill {
   border-radius: 999px;
-  padding: 6px 10px;
+  padding: 8px 11px;
+  color: white;
   font-size: 12px;
   font-weight: 950;
 }
 
-.miniLive .courtMiniTop span {
+.courtPill.live {
   background: var(--green);
 }
 
-.courtMiniCard small {
+.courtPill.next {
+  background: var(--red);
+}
+
+.courtPill.free {
+  background: #333;
+}
+
+.courtBroadcastMatch {
+  display: grid;
+  gap: 6px;
+}
+
+.courtBroadcastMatch > small {
   color: var(--red-light);
-  font-weight: 900;
+  font-weight: 950;
 }
 
-.courtMiniCard strong {
+.courtBroadcastMatch strong {
   color: white;
-  font-size: 19px;
+  font-size: 24px;
+  line-height: 1.15;
 }
 
-.courtMiniCard p {
-  margin: 0;
+.courtBroadcastMatch span {
   color: var(--muted);
-  font-weight: 850;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 12px;
 }
 
-.courtMiniEmpty {
+.courtBroadcastMatch em {
+  width: fit-content;
+  margin-top: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffd9e1;
+  padding: 9px 12px;
+  border-radius: 999px;
+  font-style: normal;
+  font-weight: 900;
+  font-size: 12px;
+}
+
+.courtBroadcastEmpty {
   margin: auto 0;
   display: grid;
   gap: 6px;
+}
+
+.courtBroadcastEmpty strong {
+  color: white;
+  font-size: 24px;
+}
+
+.courtBroadcastEmpty span {
+  color: var(--red-light);
+  font-weight: 900;
 }
 
 .courtOverlay {
@@ -283,7 +284,7 @@
 }
 
 @media (max-width: 850px) {
-  .courtOverviewGrid {
+  .courtBroadcastGrid {
     grid-template-columns: repeat(2, 1fr);
   }
 
@@ -293,15 +294,15 @@
 }
 
 @media (max-width: 560px) {
-  .centerCourtPlayers strong {
-    font-size: 27px;
-  }
-
-  .centerCourtHero h2 {
-    font-size: 36px;
-  }
-
-  .courtOverviewGrid {
+  .courtBroadcastGrid {
     grid-template-columns: 1fr;
+  }
+
+  .courtBroadcastTop b {
+    font-size: 24px;
+  }
+
+  .courtBroadcastMatch strong {
+    font-size: 22px;
   }
 }

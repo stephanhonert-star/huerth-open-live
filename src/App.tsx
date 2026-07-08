@@ -11,6 +11,7 @@ import Home from "./pages/Home";
 import Players from "./pages/Players";
 import Schedule from "./pages/Schedule";
 import { db } from "./services/firebase";
+import { DRAW_STORAGE_KEY } from "./services/drawProgression";
 import type { Match, Player, Tab } from "./types";
 
 import "./styles/app.css";
@@ -85,6 +86,11 @@ function App() {
       if (Array.isArray(data.matches)) {
         setMatches(data.matches as Match[]);
         localStorage.setItem(MATCH_STORAGE_KEY, JSON.stringify(data.matches));
+      }
+
+      if (Array.isArray(data.draws)) {
+        localStorage.setItem(DRAW_STORAGE_KEY, JSON.stringify(data.draws));
+        window.dispatchEvent(new Event("huerthOpenDrawsUpdated"));
       }
     });
 

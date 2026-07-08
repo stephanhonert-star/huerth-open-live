@@ -2,7 +2,8 @@ import * as pdfjsLib from "pdfjs-dist";
 import type { Draw, DrawMatch, DrawPlayer, DrawRound, DrawRoundName } from "../models/Draw";
 import type { Match } from "../types";
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@6.1.200/build/pdf.worker.mjs`;
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  "https://unpkg.com/pdfjs-dist@6.1.200/build/pdf.worker.mjs";
 
 export type PdfDrawImportResult = {
   draw: Draw;
@@ -15,41 +16,6 @@ type PlayerEntry = {
   player: DrawPlayer;
   lineIndex: number;
 };
-
-const TEST_SCHEDULE = [
-  "18.07. 09:00",
-  "18.07. 10:30",
-  "18.07. 12:00",
-  "18.07. 13:30",
-  "18.07. 15:00",
-  "19.07. 09:00",
-  "19.07. 10:30",
-  "19.07. 12:00",
-  "19.07. 13:30",
-  "19.07. 15:00",
-  "20.07. 16:30",
-  "20.07. 18:00",
-  "21.07. 16:30",
-  "21.07. 18:00",
-  "22.07. 16:30",
-  "22.07. 18:00",
-  "23.07. 16:30",
-  "23.07. 18:00",
-  "24.07. 16:30",
-  "24.07. 18:00",
-  "25.07. 09:00",
-  "25.07. 10:30",
-  "25.07. 12:00",
-  "25.07. 13:30",
-  "26.07. 09:00",
-  "26.07. 10:30",
-  "26.07. 12:00",
-  "26.07. 13:30",
-  "27.07. 16:30",
-  "27.07. 18:00",
-  "02.08. 11:00",
-  "02.08. 14:00",
-];
 
 function clean(value: string) {
   return value.replace(/\s+/g, " ").trim();
@@ -66,6 +32,27 @@ function slug(value: string) {
     .replace(/(^-|-$)/g, "");
 }
 
+function mapTestDate(date: string, useTestMapping: boolean) {
+  if (!useTestMapping) return date;
+
+  const mapping: Record<string, string> = {
+    "07.07.": "18.07.",
+    "08.07.": "19.07.",
+    "09.07.": "20.07.",
+    "10.07.": "21.07.",
+    "11.07.": "22.07.",
+    "12.07.": "23.07.",
+    "13.07.": "24.07.",
+    "14.07.": "25.07.",
+    "15.07.": "26.07.",
+    "16.07.": "27.07.",
+    "17.07.": "28.07.",
+    "18.07.": "29.07.",
+  };
+
+  return mapping[date] || date;
+}
+
 function getCompetition(lines: string[]) {
   const index = lines.findIndex((line) => line === "Bewerb:" || line.startsWith("Bewerb:"));
 
@@ -74,16 +61,58 @@ function getCompetition(lines: string[]) {
   const sameLine = lines[index].replace(/^Bewerb:\s*/i, "").trim();
   const raw = sameLine || lines[index + 1] || "Unbekannte Konkurrenz";
 
-  return clean(raw.replace(/\s+Hauptfeld.*$/i, "").replace(/\s+-\s+.*$/i, ""));
+  return clean(
+    raw
+      .replace(/\s+Hauptfeld.*$/i, "")
+      .replace(/\s+Nebenrunde.*$/i, "")
+      .replace(/\s+-\s+.*$/i, "")
+  );
+}
+
+function getBracket(lines: string[]) {
+  const text = lines.join(" ").toLowerCase();
+
+  if (text.includes("nebenrunde")) return "nebenrunde";
+
+  return "hauptfeld";
+}
+
+function getCompetitionCode(competition: string, bracket: "hauptfeld" | "nebenrunde") {
+  const normalized = competition.toLowerCase();
+
+  let code = "UNK";
+
+  if (normalized.includes("herren 65")) code = "H65/E";
+  else if (normalized.includes("herren 55")) code = "H55/E";
+  else if (normalized.includes("herren 50")) code = "H50/E";
+  else if (normalized.includes("herren 40")) code = "H40/E";
+  else if (normalized.includes("herren 30")) code = "H30/E";
+  else if (normalized.includes("herren")) code = "H/E";
+  else if (normalized.includes("damen 55")) code = "D55/E";
+  else if (normalized.includes("damen 50")) code = "D50/E";
+  else if (normalized.includes("damen 40")) code = "D40/E";
+  else if (normalized.includes("damen")) code = "D/E";
+
+  if (bracket === "nebenrunde") {
+    return `NR ${code}`;
+  }
+
+  return code;
 }
 
 function isPlayerLine(line: string) {
-  return /.+?,.+\(\d+\/LK\s*[0-9]{1,2}[,.][0-9]\)/i.test(line);
+  return /.+?,.+\(\d+(?:\/LK\s*[0-9]{1,2}[,.][0-9])?\)/i.test(line);
+}
+
+function stripTime(value: string) {
+  return clean(value).replace(/\s+\d{2}\.\d{2}\.\s+\d{2}:\d{2}$/, "");
 }
 
 function parsePlayer(line: string, nextLine?: string): DrawPlayer | null {
-  const playerMatch = clean(line).match(
-    /^(?:(\d+)\s+)?(.+?),\s*(.+?)\s+\((\d+)\/LK\s*([0-9]{1,2}[,.][0-9])\)$/i
+  const playerLine = stripTime(line);
+
+  const playerMatch = clean(playerLine).match(
+    /^(?:(\d+)\s+)?(.+?),\s*(.+?)\s+\((\d+)(?:\/LK\s*([0-9]{1,2}[,.][0-9]))?\)$/i
   );
 
   if (!playerMatch) return null;
@@ -91,8 +120,11 @@ function parsePlayer(line: string, nextLine?: string): DrawPlayer | null {
   return {
     name: `${clean(playerMatch[2])} ${clean(playerMatch[3])}`,
     seed: playerMatch[1] ? Number(playerMatch[1]) : undefined,
-    lk: playerMatch[5].replace(".", ","),
-    club: nextLine && !isPlayerLine(nextLine) ? clean(nextLine) : undefined,
+    lk: playerMatch[5] ? playerMatch[5].replace(".", ",") : undefined,
+    club:
+      nextLine && !isPlayerLine(nextLine) && !nextLine.startsWith("[Rast]")
+        ? clean(nextLine)
+        : undefined,
   };
 }
 
@@ -118,6 +150,42 @@ function getPlayerEntries(lines: string[]) {
   return entries;
 }
 
+function getScheduleTimes(lines: string[]) {
+  const useTestMapping = lines.some((line) => line.includes("07.07.2021 bis 18.07.2021"));
+  const times: string[] = [];
+
+  lines.forEach((line) => {
+    const matches = [...line.matchAll(/(\d{2}\.\d{2}\.)\s+(\d{2}:\d{2})/g)];
+
+    matches.forEach((match) => {
+      times.push(`${mapTestDate(match[1], useTestMapping)} ${match[2]}`);
+    });
+  });
+
+  return times;
+}
+
+function getRoundNamesFromPdf(lines: string[]): DrawRoundName[] {
+  const possibleRounds: DrawRoundName[] = [
+    "Runde 1",
+    "Runde 2",
+    "Achtelfinale",
+    "Viertelfinale",
+    "Halbfinale",
+    "Spiel um Platz 3",
+    "Finale",
+    "Sieger",
+  ];
+
+  const header = lines.find(
+    (line) => possibleRounds.filter((roundName) => line.includes(roundName)).length >= 2
+  );
+
+  if (!header) return [];
+
+  return possibleRounds.filter((roundName) => header.includes(roundName));
+}
+
 function nextPowerOfTwo(value: number) {
   let size = 2;
 
@@ -128,16 +196,20 @@ function nextPowerOfTwo(value: number) {
   return size;
 }
 
-function getRoundNames(fieldSize: number): DrawRoundName[] {
+function getFallbackRoundNames(fieldSize: number): DrawRoundName[] {
   if (fieldSize <= 8) {
-    return ["Viertelfinale", "Halbfinale", "Spiel um Platz 3", "Finale", "Sieger"];
+    return ["Viertelfinale", "Halbfinale", "Finale", "Sieger"];
   }
 
   if (fieldSize <= 16) {
-    return ["Achtelfinale", "Viertelfinale", "Halbfinale", "Spiel um Platz 3", "Finale", "Sieger"];
+    return ["Achtelfinale", "Viertelfinale", "Halbfinale", "Finale", "Sieger"];
   }
 
-  return ["Runde 1", "Achtelfinale", "Viertelfinale", "Halbfinale", "Spiel um Platz 3", "Finale", "Sieger"];
+  if (fieldSize <= 32) {
+    return ["Runde 1", "Achtelfinale", "Viertelfinale", "Halbfinale", "Finale", "Sieger"];
+  }
+
+  return ["Runde 1", "Runde 2", "Achtelfinale", "Viertelfinale", "Halbfinale", "Finale", "Sieger"];
 }
 
 function placeholder(roundName: DrawRoundName, index: number) {
@@ -145,32 +217,43 @@ function placeholder(roundName: DrawRoundName, index: number) {
   if (roundName === "Halbfinale") return `Sieger Viertelfinale ${index}`;
   if (roundName === "Viertelfinale") return `Sieger Achtelfinale ${index}`;
   if (roundName === "Achtelfinale") return `Sieger Runde 1 ${index}`;
+  if (roundName === "Runde 2") return `Sieger Runde 1 ${index}`;
 
   return `Sieger Match ${index}`;
 }
 
-function getSchedule(index: number) {
-  return TEST_SCHEDULE[index] || "";
+function addExtra<T>(value: T, extra: Record<string, unknown>): T {
+  return {
+    ...(value as Record<string, unknown>),
+    ...extra,
+  } as T;
 }
 
-function getCourt(index: number) {
-  return (index % 5) + 1;
+function getMatchNr(roundIndex: number, matchIndex: number) {
+  return String(roundIndex * 100 + matchIndex);
 }
 
-function createRounds(competition: string, players: DrawPlayer[]): DrawRound[] {
+function createRounds(
+  competition: string,
+  competitionCode: string,
+  bracket: "hauptfeld" | "nebenrunde",
+  players: DrawPlayer[],
+  scheduleTimes: string[],
+  pdfRoundNames: DrawRoundName[]
+): DrawRound[] {
   const fieldSize = nextPowerOfTwo(players.length);
   const byes = fieldSize - players.length;
-  const roundNames = getRoundNames(fieldSize);
-  const baseId = slug(competition);
+  const roundNames = pdfRoundNames.length > 0 ? pdfRoundNames : getFallbackRoundNames(fieldSize);
+  const baseId = `${slug(competition)}-${bracket}`;
   const rounds: DrawRound[] = [];
 
   let currentMatchCount = fieldSize / 2;
   let firstRoundPlayerCount = players.length;
   let scheduleIndex = 0;
 
-  if (byes > 0 && fieldSize === 32) {
+  if (byes > 0 && fieldSize >= 16) {
     firstRoundPlayerCount = players.length - byes;
-    currentMatchCount = firstRoundPlayerCount / 2;
+    currentMatchCount = Math.max(1, firstRoundPlayerCount / 2);
   }
 
   const byePlayers = players.slice(firstRoundPlayerCount);
@@ -179,20 +262,25 @@ function createRounds(competition: string, players: DrawPlayer[]): DrawRound[] {
     const roundName = roundNames[roundIndex];
     const matches: DrawMatch[] = [];
 
-    if (roundName === "Spiel um Platz 3") {
-      matches.push({
-        id: `${baseId}-hauptfeld-place3`,
-        competition,
-        bracket: "hauptfeld",
-        round: "Spiel um Platz 3",
-        roundIndex: roundIndex + 1,
-        matchIndex: 1,
-        playerA: { name: "Verlierer Halbfinale 1" },
-        playerB: { name: "Verlierer Halbfinale 2" },
-        status: "planned",
-        court: 2,
-        time: "02.08. 11:00",
-      });
+    if (roundName === "Sieger") {
+      matches.push(
+        addExtra(
+          {
+            id: `${baseId}-winner`,
+            competition,
+            bracket,
+            round: "Sieger",
+            roundIndex: roundIndex + 1,
+            matchIndex: 1,
+            playerA: { name: "Turniersieger" },
+            status: "planned",
+          },
+          {
+            nr: getMatchNr(roundIndex + 1, 1),
+            competitionCode,
+          }
+        )
+      );
 
       rounds.push({
         name: roundName,
@@ -203,17 +291,30 @@ function createRounds(competition: string, players: DrawPlayer[]): DrawRound[] {
       continue;
     }
 
-    if (roundName === "Sieger") {
-      matches.push({
-        id: `${baseId}-hauptfeld-winner`,
-        competition,
-        bracket: "hauptfeld",
-        round: "Sieger",
-        roundIndex: roundIndex + 1,
-        matchIndex: 1,
-        playerA: { name: "Turniersieger" },
-        status: "planned",
-      });
+    if (roundName === "Spiel um Platz 3") {
+      matches.push(
+        addExtra(
+          {
+            id: `${baseId}-place3`,
+            competition,
+            bracket,
+            round: "Spiel um Platz 3",
+            roundIndex: roundIndex + 1,
+            matchIndex: 1,
+            playerA: { name: "Verlierer Halbfinale 1" },
+            playerB: { name: "Verlierer Halbfinale 2" },
+            status: "planned",
+            court: 1,
+            time: scheduleTimes[scheduleIndex] || "",
+          },
+          {
+            nr: getMatchNr(roundIndex + 1, 1),
+            competitionCode,
+          }
+        )
+      );
+
+      scheduleIndex++;
 
       rounds.push({
         name: roundName,
@@ -225,51 +326,58 @@ function createRounds(competition: string, players: DrawPlayer[]): DrawRound[] {
     }
 
     for (let matchIndex = 0; matchIndex < currentMatchCount; matchIndex++) {
-      const id = `${baseId}-hauptfeld-r${roundIndex + 1}-m${matchIndex + 1}`;
+      const nr = getMatchNr(roundIndex + 1, matchIndex + 1);
+      const id = `${baseId}-nr${nr}`;
       const nextRoundName = roundNames[roundIndex + 1];
       const nextMatchIndex = Math.floor(matchIndex / 2) + 1;
 
-      let nextMatchId = `${baseId}-hauptfeld-r${roundIndex + 2}-m${nextMatchIndex}`;
+      let nextMatchId = `${baseId}-nr${getMatchNr(roundIndex + 2, nextMatchIndex)}`;
 
       if (nextRoundName === "Spiel um Platz 3") {
-        nextMatchId = `${baseId}-hauptfeld-r${roundIndex + 3}-m${nextMatchIndex}`;
+        nextMatchId = `${baseId}-nr${getMatchNr(roundIndex + 3, nextMatchIndex)}`;
       }
 
       if (nextRoundName === "Sieger") {
-        nextMatchId = `${baseId}-hauptfeld-winner`;
+        nextMatchId = `${baseId}-winner`;
       }
 
       const playerA =
         roundIndex === 0
           ? players[matchIndex * 2]
-          : roundIndex === 1 && byes > 0 && fieldSize === 32
+          : roundIndex === 1 && byes > 0 && fieldSize >= 16
           ? { name: placeholder(roundNames[roundIndex - 1], matchIndex + 1) }
           : { name: placeholder(roundNames[roundIndex - 1], matchIndex * 2 + 1) };
 
       const playerB =
         roundIndex === 0
           ? players[matchIndex * 2 + 1]
-          : roundIndex === 1 && byes > 0 && fieldSize === 32
-          ? byePlayers[matchIndex]
+          : roundIndex === 1 && byes > 0 && fieldSize >= 16
+          ? byePlayers[matchIndex] || { name: placeholder(roundNames[roundIndex - 1], matchIndex * 2 + 2) }
           : { name: placeholder(roundNames[roundIndex - 1], matchIndex * 2 + 2) };
 
-      const isFinal = roundName === "Finale";
-
-      matches.push({
-        id,
-        competition,
-        bracket: "hauptfeld",
-        round: roundName,
-        roundIndex: roundIndex + 1,
-        matchIndex: matchIndex + 1,
-        playerA,
-        playerB,
-        status: "planned",
-        court: isFinal ? 1 : getCourt(scheduleIndex),
-        time: isFinal ? "02.08. 14:00" : getSchedule(scheduleIndex),
-        nextMatchId,
-        nextSlot: matchIndex % 2 === 0 ? "playerA" : "playerB",
-      });
+      matches.push(
+        addExtra(
+          {
+            id,
+            competition,
+            bracket,
+            round: roundName,
+            roundIndex: roundIndex + 1,
+            matchIndex: matchIndex + 1,
+            playerA,
+            playerB,
+            status: "planned",
+            court: 1,
+            time: scheduleTimes[scheduleIndex] || "",
+            nextMatchId,
+            nextSlot: matchIndex % 2 === 0 ? "playerA" : "playerB",
+          },
+          {
+            nr,
+            competitionCode,
+          }
+        )
+      );
 
       scheduleIndex++;
     }
@@ -282,7 +390,7 @@ function createRounds(competition: string, players: DrawPlayer[]): DrawRound[] {
 
     currentMatchCount = currentMatchCount / 2;
 
-    if (roundIndex === 0 && byes > 0 && fieldSize === 32) {
+    if (roundIndex === 0 && byes > 0 && fieldSize >= 16) {
       currentMatchCount = fieldSize / 4;
     }
   }
@@ -294,24 +402,30 @@ function createMatchesFromDraw(draw: Draw): Match[] {
   return draw.rounds
     .flatMap((round) => round.matches)
     .filter((match) => match.round !== "Sieger")
-    .map((match) => ({
-      drawMatchId: match.id,
-      time: match.time || "",
-      court: match.court || 1,
-      competition: match.competition,
-      a: match.playerA?.name || "offen",
-      b: match.playerB?.name || "offen",
-      status: "planned",
-      since: "",
-      result: "",
-    }));
+    .map((match) =>
+      addExtra(
+        {
+          drawMatchId: match.id,
+          time: match.time || "",
+          court: match.court || 1,
+          competition: match.competition,
+          a: match.playerA?.name || "offen",
+          b: match.playerB?.name || "offen",
+          status: "planned",
+          since: "",
+          result: "",
+        },
+        {
+          nr: (match as unknown as { nr?: string }).nr,
+          competitionCode: (match as unknown as { competitionCode?: string }).competitionCode,
+        }
+      )
+    );
 }
 
 export async function parseDrawFromPdf(file: File): Promise<PdfDrawImportResult> {
   const buffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({
-    data: buffer,
-      }).promise;
+  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
 
   let debugText = "";
   const allLines: string[] = [];
@@ -329,15 +443,19 @@ export async function parseDrawFromPdf(file: File): Promise<PdfDrawImportResult>
   }
 
   const competition = getCompetition(allLines);
+  const bracket = getBracket(allLines);
+  const competitionCode = getCompetitionCode(competition, bracket);
   const entries = getPlayerEntries(allLines);
   const players = entries.map((entry) => entry.player);
-  const rounds = createRounds(competition, players);
+  const scheduleTimes = getScheduleTimes(allLines);
+  const pdfRoundNames = getRoundNamesFromPdf(allLines);
+  const rounds = createRounds(competition, competitionCode, bracket, players, scheduleTimes, pdfRoundNames);
 
   const draw: Draw = {
-    id: `${slug(competition)}-hauptfeld`,
+    id: `${slug(competition)}-${bracket}`,
     competition,
-    bracket: "hauptfeld",
-    title: `${competition} Hauptfeld`,
+    bracket,
+    title: `${competition} ${bracket === "nebenrunde" ? "Nebenrunde" : "Hauptfeld"}`,
     rounds,
   };
 

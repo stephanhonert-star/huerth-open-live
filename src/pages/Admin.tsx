@@ -8,6 +8,7 @@ import { db } from "../services/firebase";
 import { loadDraws, resetDraws, saveDraws, updateDrawAfterResult } from "../services/drawProgression";
 import { parseDrawFromPdf } from "../services/pdfDrawParser";
 import { parsePlayersFromPdf } from "../services/pdfPlayerParser";
+import { parseScheduleFromPdf } from "../services/pdfScheduleParser";
 
 const ADMIN_PASSWORD = "huerth2026";
 const MATCH_STORAGE_KEY = "huerthOpenMatches";
@@ -163,7 +164,7 @@ function getNextMatchInfo(drawMatchId?: string) {
 
 function Admin() {
   const [password, setPassword] = useState("");
-  const [unlocked, setUnlocked] = useState(false);
+  const [unlocked, setUnlocked] = useState(() => sessionStorage.getItem("huerth-open-admin") === "true");
   const [error, setError] = useState("");
   const [matches, setMatches] = useState<Match[]>(loadMatches);
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
@@ -175,6 +176,7 @@ function Admin() {
     event.preventDefault();
 
     if (password === ADMIN_PASSWORD) {
+      sessionStorage.setItem("huerth-open-admin", "true");
       setUnlocked(true);
       setError("");
       return;
@@ -266,6 +268,28 @@ function Admin() {
     } catch (error) {
       console.error(error);
       setImportMessage("Fehler beim Import der Teilnehmerliste");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+
+  async function importSchedulePdf(file: File) {
+    setLoading(true);
+    setImportMessage("Matchplan wird importiert...");
+
+    try {
+      const updatedMatches = await parseScheduleFromPdf(file, matches);
+
+      setMatches(updatedMatches);
+      saveMatches(updatedMatches);
+
+      await publishLiveData(updatedMatches, loadPlayers());
+
+      setImportMessage("Matchplan erfolgreich importiert");
+    } catch (error) {
+      console.error(error);
+      setImportMessage("Fehler beim Import des Matchplans");
     } finally {
       setLoading(false);
     }
@@ -376,12 +400,24 @@ function Admin() {
       : matches.filter((match) => getDatePart(match.time) === selectedDate);
 
   const sortedMatches = sortMatches(visibleMatches);
+  const courts = [1, 2, 3, 4, 5, 6];
+  const matchesByCourt = courts.map((court) => ({
+    court,
+    matches: sortedMatches.filter((match) => match.court === court),
+  }));
   const plannedMatches = matches.filter((match) => match.status === "planned");
   const liveMatches = matches.filter((match) => match.status === "live");
   const doneMatches = matches.filter((match) => match.status === "done");
 
   return (
-    <>
+    <div
+      style={{
+        width: "min(1500px, calc(100vw - 32px))",
+        maxWidth: 1500,
+        margin: "0 auto",
+        padding: "0 16px 40px",
+      }}
+    >
       <section className="pageHeader adminTopHeader">
         <div>
           <p>⚙️ ADMIN</p>
@@ -421,6 +457,23 @@ function Admin() {
               }}
             />
           </label>
+
+          <label className="adminImportButton">
+            <FileUp size={18} />
+            Matchplan
+            <input
+              type="file"
+              accept="application/pdf"
+              onClick={(event) => {
+                event.currentTarget.value = "";
+              }}
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) importSchedulePdf(file);
+              }}
+            />
+          </label>
+
         </div>
       </section>
 
@@ -447,8 +500,8 @@ function Admin() {
         </article>
       </section>
 
-      <section className="adminSection">
-        <div className="adminSectionHeader">
+      <section className="adminSection" style={{ maxWidth: 1500, margin: "0 auto" }}>
+        <div className="adminSectionHeader" style={{ alignItems: "end" }}>
           <div>
             <p>🎾 LIVE & ERGEBNISSE</p>
             <h2>Spielsteuerung</h2>
@@ -467,7 +520,7 @@ function Admin() {
           </div>
         </div>
 
-        <section className="competitionChips">
+        <section className="competitionChips" style={{ justifyContent: "center" }}>
           <button
             type="button"
             className={selectedDate === "Alle" ? "active" : ""}
@@ -492,94 +545,157 @@ function Admin() {
           })}
         </section>
 
-        <div className="adminMatchList">
-          {sortedMatches.map((match) => (
-            <article
-              className={`adminMatchCard adminMatchCard-${match.status}`}
-              key={`${match.drawMatchId}-${match.a}-${match.b}`}
+        <div
+          className="adminMatchList"
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(6, minmax(210px, 1fr))",
+            gap: 10,
+            overflowX: "auto",
+            alignItems: "start",
+            paddingBottom: 12,
+            width: "100%",
+            margin: "0 auto",
+          }}
+        >
+          {matchesByCourt.map(({ court, matches: courtMatches }) => (
+            <section
+              key={court}
+              style={{
+                display: "grid",
+                gap: 8,
+                minWidth: 210,
+              }}
             >
-              <div className="adminMatchTop">
-                <div>
-                  <b>Platz {match.court}</b>
-                  <span>{match.time} Uhr</span>
-                </div>
-
-                <em>
-                  {match.status === "live"
-                    ? "LIVE"
-                    : match.status === "done"
-                    ? "FERTIG"
-                    : "GEPLANT"}
-                </em>
+              <div
+                style={{
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 2,
+                  background: "#050505",
+                  border: "1px solid #2b2b2b",
+                  borderRadius: 14,
+                  padding: "7px 9px",
+                }}
+              >
+                <strong style={{ color: "white", fontSize: 18 }}>Platz {court}</strong>
+                <span
+                  style={{
+                    display: "block",
+                    color: "#aeb7c5",
+                    fontWeight: 750,
+                    marginTop: 2,
+                  }}
+                >
+                  {courtMatches.length} Spiele
+                </span>
               </div>
 
-              <small>{match.competition}</small>
-
-              <div className="adminPlayers">
-                <strong>{match.a}</strong>
-                <span>gegen</span>
-                <strong>{match.b}</strong>
-              </div>
-
-              <div className="adminEditGrid">
-                <label className="adminCourtSelect">
-                  Platz ändern
-                  <select
-                    value={match.court}
-                    onChange={(event) => changeCourt(match, Number(event.target.value))}
-                  >
-                    <option value={1}>Platz 1</option>
-                    <option value={2}>Platz 2</option>
-                    <option value={3}>Platz 3</option>
-                    <option value={4}>Platz 4</option>
-                    <option value={5}>Platz 5</option>
-                    <option value={6}>Platz 6 Reserve</option>
-                  </select>
-                </label>
-
-                <label className="adminCourtSelect">
-                  Uhrzeit ändern
-                  <input
-                    type="time"
-                    value={getTimePart(match.time)}
-                    onChange={(event) => {
-                      const date = getDatePart(match.time);
-                      const nextTime =
-                        date === "Ohne Datum" ? event.target.value : `${date} ${event.target.value}`;
-
-                      changeTime(match, nextTime);
+              {courtMatches.length === 0 ? (
+                <article className="adminMatchCard" style={{ padding: 12, borderRadius: 16, minWidth: 0 }}>
+                  <div className="adminPlayers">
+                    <strong>Keine Spiele</strong>
+                    <span>für diesen Platz</span>
+                  </div>
+                </article>
+              ) : (
+                courtMatches.map((match) => (
+                  <article
+                    className={`adminMatchCard adminMatchCardCompact adminMatchCard-${match.status}`}
+                    key={`${match.drawMatchId}-${match.a}-${match.b}`}
+                    style={{
+                      padding: 14,
+                      borderRadius: 18,
+                      minWidth: 0,
                     }}
-                  />
-                </label>
-              </div>
+                  >
+                    <div className="adminMatchTop">
+                      <div>
+                        <b>Platz {match.court}</b>
+                        <span>{match.time} Uhr</span>
+                      </div>
 
-              {match.status === "live" && (
-                <p className="adminInfo">läuft seit {match.since} Uhr</p>
+                      <em>
+                        {match.status === "live"
+                          ? "LIVE"
+                          : match.status === "done"
+                          ? "FERTIG"
+                          : "GEPLANT"}
+                      </em>
+                    </div>
+
+                    <small>{match.competition}</small>
+
+                    <div className="adminPlayers">
+                      <strong>{match.a}</strong>
+                      <span>gegen</span>
+                      <strong>{match.b}</strong>
+                    </div>
+
+                    <div className="adminEditGrid">
+                      <label className="adminCourtSelect">
+                        Platz ändern
+                        <select
+                          value={match.court}
+                          onChange={(event) => changeCourt(match, Number(event.target.value))}
+                        >
+                          <option value={1}>Platz 1</option>
+                          <option value={2}>Platz 2</option>
+                          <option value={3}>Platz 3</option>
+                          <option value={4}>Platz 4</option>
+                          <option value={5}>Platz 5</option>
+                          <option value={6}>Platz 6 Reserve</option>
+                        </select>
+                      </label>
+
+                      <label className="adminCourtSelect">
+                        Uhrzeit ändern
+                        <input
+                          type="time"
+                          value={getTimePart(match.time)}
+                          onChange={(event) => {
+                            const date = getDatePart(match.time);
+                            const nextTime =
+                              date === "Ohne Datum"
+                                ? event.target.value
+                                : `${date} ${event.target.value}`;
+
+                            changeTime(match, nextTime);
+                          }}
+                        />
+                      </label>
+                    </div>
+
+                    {match.status === "live" && (
+                      <p className="adminInfo">läuft seit {match.since} Uhr</p>
+                    )}
+
+                    {match.result && <p className="adminResult">Ergebnis: {match.result}</p>}
+
+                    <div className="adminActions">
+                      {match.status === "planned" && (
+                        <button type="button" onClick={() => startMatch(match)}>
+                          <Play size={18} />
+                          Spiel starten
+                        </button>
+                      )}
+
+                      {match.status === "live" && (
+                        <button type="button" onClick={() => undoStartMatch(match)}>
+                          <Square size={18} />
+                          Start rückgängig
+                        </button>
+                      )}
+
+                      <button type="button" onClick={() => setSelectedMatch(match)}>
+                        <Trophy size={18} />
+                        Ergebnis
+                      </button>
+                    </div>
+                  </article>
+                ))
               )}
-
-              {match.result && <p className="adminResult">Ergebnis: {match.result}</p>}
-
-              <div className="adminActions">
-                {match.status === "planned" && (
-                  <button type="button" onClick={() => startMatch(match)}>
-                    <Play size={18} />
-                    Spiel starten
-                  </button>
-                )}
-
-                {match.status === "live" && (
-                  <button type="button" onClick={() => undoStartMatch(match)}>
-                    <Square size={18} />
-                    Start rückgängig
-                  </button>
-                )}
-
-                <button type="button" onClick={() => setSelectedMatch(match)}>
-                  <Trophy size={18} />
-                  Ergebnis
-                </button>
-              </div>
-            </article>
+            </section>
           ))}
         </div>
       </section>
@@ -592,7 +708,7 @@ function Admin() {
           onClose={() => setSelectedMatch(null)}
         />
       )}
-    </>
+    </div>
   );
 }
 

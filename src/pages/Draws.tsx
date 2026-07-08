@@ -4,6 +4,8 @@ import { loadDraws } from "../services/drawProgression";
 
 function Draws() {
   const [draws, setDraws] = useState(loadDraws);
+  const [competition, setCompetition] = useState("");
+  const [bracket, setBracket] = useState<"hauptfeld" | "nebenrunde">("hauptfeld");
 
   useEffect(() => {
     function handleDrawsUpdated() {
@@ -18,14 +20,31 @@ function Draws() {
   }, []);
 
   const competitions = Array.from(new Set(draws.map((draw) => draw.competition)));
-  const [competition, setCompetition] = useState(competitions[0] || "");
-  const [bracket, setBracket] = useState<"hauptfeld" | "nebenrunde">("hauptfeld");
 
   useEffect(() => {
-    if (!competition && competitions.length > 0) {
-      setCompetition(competitions[0]);
+    if (draws.length === 0) return;
+
+    const firstDraw = draws[0];
+
+    if (!competition) {
+      setCompetition(firstDraw.competition);
+      setBracket(firstDraw.bracket);
+      return;
     }
-  }, [competition, competitions]);
+
+    const availableForCompetition = draws.filter(
+      (draw) => draw.competition === competition
+    );
+
+    if (
+      availableForCompetition.length > 0 &&
+      !availableForCompetition.some((draw) => draw.bracket === bracket)
+    ) {
+      setBracket(availableForCompetition[0].bracket);
+    }
+  }, [draws, competition, bracket]);
+
+  const availableBrackets = draws.filter((draw) => draw.competition === competition);
 
   const selectedDraw = draws.find(
     (draw) => draw.competition === competition && draw.bracket === bracket
@@ -59,7 +78,21 @@ function Draws() {
       <section className="drawControls">
         <label>
           Konkurrenz
-          <select value={competition} onChange={(event) => setCompetition(event.target.value)}>
+          <select
+            value={competition}
+            onChange={(event) => {
+              const nextCompetition = event.target.value;
+              const firstDrawForCompetition = draws.find(
+                (draw) => draw.competition === nextCompetition
+              );
+
+              setCompetition(nextCompetition);
+
+              if (firstDrawForCompetition) {
+                setBracket(firstDrawForCompetition.bracket);
+              }
+            }}
+          >
             {competitions.map((item) => (
               <option key={item} value={item}>
                 {item}
@@ -71,6 +104,7 @@ function Draws() {
         <div className="drawToggle">
           <button
             type="button"
+            disabled={!availableBrackets.some((draw) => draw.bracket === "hauptfeld")}
             className={bracket === "hauptfeld" ? "active" : ""}
             onClick={() => setBracket("hauptfeld")}
           >
@@ -79,6 +113,7 @@ function Draws() {
 
           <button
             type="button"
+            disabled={!availableBrackets.some((draw) => draw.bracket === "nebenrunde")}
             className={bracket === "nebenrunde" ? "active" : ""}
             onClick={() => setBracket("nebenrunde")}
           >

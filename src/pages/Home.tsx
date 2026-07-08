@@ -12,6 +12,10 @@ type HomeProps = {
   allMatches: Match[];
   done: Match[];
   players: Player[];
+  visitorStats: {
+    today: number;
+    total: number;
+  };
   onChangeTab: (tab: Tab) => void;
 };
 
@@ -33,13 +37,24 @@ function getDatePart(time: string) {
   return time.includes(".") ? time.split(" ")[0] : "Ohne Datum";
 }
 
-function Home({ live, planned, allMatches, done, players, onChangeTab }: HomeProps) {
+function Home({
+  live,
+  planned,
+  allMatches,
+  done,
+  players,
+  visitorStats,
+  onChangeTab,
+}: HomeProps) {
   const realLive = live.filter(isRealMatch);
   const realPlanned = planned.filter(isRealMatch);
   const realDone = done.filter(isRealMatch);
   const realMatches = allMatches.filter(isRealMatch);
 
-  const dates = Array.from(new Set(realPlanned.map((match) => getDatePart(match.time)))).sort();
+  const dates = Array.from(
+    new Set(realPlanned.map((match) => getDatePart(match.time)))
+  ).sort();
+
   const [selectedDate, setSelectedDate] = useState("Alle");
 
   const visiblePlanned =
@@ -53,7 +68,9 @@ function Home({ live, planned, allMatches, done, players, onChangeTab }: HomePro
 
       <section className="eventHero">
         <p>TOURNAMENT CENTER</p>
+
         <h1>{tournamentStore.tournament.name}</h1>
+
         <span>
           {tournamentStore.tournament.date} · {tournamentStore.tournament.club}
         </span>
@@ -63,17 +80,30 @@ function Home({ live, planned, allMatches, done, players, onChangeTab }: HomePro
             <b>{players.length}</b>
             <small>Teilnehmer</small>
           </div>
+
           <div>
             <b>{tournamentStore.tournament.competitions}</b>
             <small>Konkurrenzen</small>
           </div>
+
           <div>
             <b>5 + 1</b>
             <small>Matchplätze</small>
           </div>
+
           <div>
             <b>16</b>
             <small>Turniertage</small>
+          </div>
+
+          <div>
+            <b>{visitorStats.today}</b>
+            <small>Besucher heute</small>
+          </div>
+
+          <div>
+            <b>{visitorStats.total}</b>
+            <small>Besuche gesamt</small>
           </div>
         </div>
 
@@ -116,7 +146,9 @@ function Home({ live, planned, allMatches, done, players, onChangeTab }: HomePro
             onClick={() => setSelectedDate(date)}
           >
             {date}{" "}
-            <span>{realPlanned.filter((match) => getDatePart(match.time) === date).length}</span>
+            <span>
+              {realPlanned.filter((match) => getDatePart(match.time) === date).length}
+            </span>
           </button>
         ))}
       </section>

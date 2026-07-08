@@ -1,11 +1,26 @@
 import { useState } from "react";
 import { doc, setDoc } from "firebase/firestore";
-import { FileUp, Play, RotateCcw, Square, Trash2, Trophy, Users } from "lucide-react";
+import {
+  FileUp,
+  Play,
+  RotateCcw,
+  Settings,
+  Square,
+  Trash2,
+  Trophy,
+  Users,
+} from "lucide-react";
 import ResultDialog from "../components/admin/ResultDialog";
 import { matches as defaultMatches } from "../data/matches";
 import type { Match, Player } from "../types";
 import { db } from "../services/firebase";
-import { loadDraws, resetDraws, saveDraws, updateDrawAfterResult } from "../services/drawProgression";
+import {
+  loadDraws,
+  resetDraws,
+  saveDraws,
+  updateDrawAfterResult,
+  updateDrawSchedule,
+} from "../services/drawProgression";
 import { parseDrawFromPdf } from "../services/pdfDrawParser";
 import { parsePlayersFromPdf } from "../services/pdfPlayerParser";
 import { parseScheduleFromPdf } from "../services/pdfScheduleParser";
@@ -117,7 +132,9 @@ function isPlaceholderName(name: string) {
   );
 }
 
-function createPlayersFromDraw(result: Awaited<ReturnType<typeof parseDrawFromPdf>>): Player[] {
+function createPlayersFromDraw(
+  result: Awaited<ReturnType<typeof parseDrawFromPdf>>
+): Player[] {
   const players: Player[] = [];
 
   result.draw.rounds.forEach((round) => {
@@ -162,15 +179,28 @@ function getNextMatchInfo(drawMatchId?: string) {
   return null;
 }
 
+function getStatusLabel(status: Match["status"]) {
+  if (status === "live") return "LIVE";
+  if (status === "done") return "FERTIG";
+  return "GEPLANT";
+}
+
 function Admin() {
   const [password, setPassword] = useState("");
-  const [unlocked, setUnlocked] = useState(() => sessionStorage.getItem("huerth-open-admin") === "true");
+  const [unlocked, setUnlocked] = useState(
+    () => sessionStorage.getItem("huerth-open-admin") === "true"
+  );
   const [error, setError] = useState("");
   const [matches, setMatches] = useState<Match[]>(loadMatches);
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [selectedDate, setSelectedDate] = useState("Alle");
   const [importMessage, setImportMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [editingMatchId, setEditingMatchId] = useState<string | null>(null);
+
+  function getMatchKey(match: Match) {
+    return match.drawMatchId || `${match.a}-${match.b}`;
+  }
 
   function login(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -195,8 +225,8 @@ function Admin() {
     await publishLiveData(nextMatches, loadPlayers());
   }
 
-  function startMatch(match: Match) {
-    updateMatch({
+  async function startMatch(match: Match) {
+    await updateMatch({
       ...match,
       status: "live",
       since: new Date().toLocaleTimeString("de-DE", {
@@ -206,20 +236,34 @@ function Admin() {
     });
   }
 
-  function undoStartMatch(match: Match) {
-    updateMatch({
+  async function undoStartMatch(match: Match) {
+    await updateMatch({
       ...match,
       status: "planned",
       since: "",
     });
   }
 
-  function changeCourt(match: Match, court: number) {
-    updateMatch({ ...match, court });
+  async function changeCourt(match: Match, court: number) {
+    updateDrawSchedule(match.drawMatchId, {
+      court,
+    });
+
+    await updateMatch({
+      ...match,
+      court,
+    });
   }
 
-  function changeTime(match: Match, time: string) {
-    updateMatch({ ...match, time });
+  async function changeTime(match: Match, time: string) {
+    updateDrawSchedule(match.drawMatchId, {
+      time,
+    });
+
+    await updateMatch({
+      ...match,
+      time,
+    });
   }
 
   async function importDrawPdf(file: File) {
@@ -231,8 +275,12 @@ function Admin() {
       const importedPlayers = createPlayersFromDraw(result);
 
       const existingDraws = loadDraws().filter((draw) => draw.id !== result.draw.id);
-      const existingMatches = matches.filter((match) => match.competition !== result.draw.competition);
-      const existingPlayers = loadPlayers().filter((player) => player.competition !== result.draw.competition);
+      const existingMatches = matches.filter(
+        (match) => match.competition !== result.draw.competition
+      );
+      const existingPlayers = loadPlayers().filter(
+        (player) => player.competition !== result.draw.competition
+      );
 
       const nextDraws = [...existingDraws, result.draw];
       const nextMatches = [...existingMatches, ...result.matches];
@@ -273,10 +321,9 @@ function Admin() {
     }
   }
 
-
   async function importSchedulePdf(file: File) {
     setLoading(true);
-    setImportMessage("Matchplan wird importiert...");
+    setImportMessage("Spielplan wird aktualisiert...");
 
     try {
       const updatedMatches = await parseScheduleFromPdf(file, matches);
@@ -286,10 +333,10 @@ function Admin() {
 
       await publishLiveData(updatedMatches, loadPlayers());
 
-      setImportMessage("Matchplan erfolgreich importiert");
+      setImportMessage("Spielplan erfolgreich aktualisiert");
     } catch (error) {
       console.error(error);
-      setImportMessage("Fehler beim Import des Matchplans");
+      setImportMessage("Fehler beim Aktualisieren des Spielplans");
     } finally {
       setLoading(false);
     }
@@ -401,10 +448,12 @@ function Admin() {
 
   const sortedMatches = sortMatches(visibleMatches);
   const courts = [1, 2, 3, 4, 5, 6];
+
   const matchesByCourt = courts.map((court) => ({
     court,
     matches: sortedMatches.filter((match) => match.court === court),
   }));
+
   const plannedMatches = matches.filter((match) => match.status === "planned");
   const liveMatches = matches.filter((match) => match.status === "live");
   const doneMatches = matches.filter((match) => match.status === "done");
@@ -460,7 +509,7 @@ function Admin() {
 
           <label className="adminImportButton">
             <FileUp size={18} />
-            Matchplan
+            Spielplan aktualisieren
             <input
               type="file"
               accept="application/pdf"
@@ -473,7 +522,6 @@ function Admin() {
               }}
             />
           </label>
-
         </div>
       </section>
 
@@ -592,108 +640,123 @@ function Admin() {
               </div>
 
               {courtMatches.length === 0 ? (
-                <article className="adminMatchCard" style={{ padding: 12, borderRadius: 16, minWidth: 0 }}>
+                <article
+                  className="adminMatchCard"
+                  style={{ padding: 12, borderRadius: 16, minWidth: 0 }}
+                >
                   <div className="adminPlayers">
                     <strong>Keine Spiele</strong>
                     <span>für diesen Platz</span>
                   </div>
                 </article>
               ) : (
-                courtMatches.map((match) => (
-                  <article
-                    className={`adminMatchCard adminMatchCardCompact adminMatchCard-${match.status}`}
-                    key={`${match.drawMatchId}-${match.a}-${match.b}`}
-                    style={{
-                      padding: 14,
-                      borderRadius: 18,
-                      minWidth: 0,
-                    }}
-                  >
-                    <div className="adminMatchTop">
-                      <div>
-                        <b>Platz {match.court}</b>
-                        <span>{match.time} Uhr</span>
+                courtMatches.map((match) => {
+                  const matchKey = getMatchKey(match);
+                  const isEditing = editingMatchId === matchKey;
+
+                  return (
+                    <article
+                      className={`adminMatchCard adminMatchCardCompact adminMatchCard-${match.status}`}
+                      key={matchKey}
+                      style={{
+                        padding: 14,
+                        borderRadius: 18,
+                        minWidth: 0,
+                      }}
+                    >
+                      <div className="adminMatchTop">
+                        <div>
+                          <b>{match.time}</b>
+                          <span>Platz {match.court}</span>
+                        </div>
+
+                        <em>{getStatusLabel(match.status)}</em>
                       </div>
 
-                      <em>
-                        {match.status === "live"
-                          ? "LIVE"
-                          : match.status === "done"
-                          ? "FERTIG"
-                          : "GEPLANT"}
-                      </em>
-                    </div>
+                      <small>{match.competition}</small>
 
-                    <small>{match.competition}</small>
-
-                    <div className="adminPlayers">
-                      <strong>{match.a}</strong>
-                      <span>gegen</span>
-                      <strong>{match.b}</strong>
-                    </div>
-
-                    <div className="adminEditGrid">
-                      <label className="adminCourtSelect">
-                        Platz ändern
-                        <select
-                          value={match.court}
-                          onChange={(event) => changeCourt(match, Number(event.target.value))}
-                        >
-                          <option value={1}>Platz 1</option>
-                          <option value={2}>Platz 2</option>
-                          <option value={3}>Platz 3</option>
-                          <option value={4}>Platz 4</option>
-                          <option value={5}>Platz 5</option>
-                          <option value={6}>Platz 6 Reserve</option>
-                        </select>
-                      </label>
-
-                      <label className="adminCourtSelect">
-                        Uhrzeit ändern
-                        <input
-                          type="time"
-                          value={getTimePart(match.time)}
-                          onChange={(event) => {
-                            const date = getDatePart(match.time);
-                            const nextTime =
-                              date === "Ohne Datum"
-                                ? event.target.value
-                                : `${date} ${event.target.value}`;
-
-                            changeTime(match, nextTime);
-                          }}
-                        />
-                      </label>
-                    </div>
-
-                    {match.status === "live" && (
-                      <p className="adminInfo">läuft seit {match.since} Uhr</p>
-                    )}
-
-                    {match.result && <p className="adminResult">Ergebnis: {match.result}</p>}
-
-                    <div className="adminActions">
-                      {match.status === "planned" && (
-                        <button type="button" onClick={() => startMatch(match)}>
-                          <Play size={18} />
-                          Spiel starten
-                        </button>
-                      )}
+                      <div className="adminPlayers">
+                        <strong>{match.a}</strong>
+                        <span>gegen</span>
+                        <strong>{match.b}</strong>
+                      </div>
 
                       {match.status === "live" && (
-                        <button type="button" onClick={() => undoStartMatch(match)}>
-                          <Square size={18} />
-                          Start rückgängig
-                        </button>
+                        <p className="adminInfo">läuft seit {match.since} Uhr</p>
                       )}
 
-                      <button type="button" onClick={() => setSelectedMatch(match)}>
-                        <Trophy size={18} />
-                        Ergebnis
+                      {match.result && <p className="adminResult">Ergebnis: {match.result}</p>}
+
+                      <button
+                        type="button"
+                        className="adminEditToggle"
+                        onClick={() => setEditingMatchId(isEditing ? null : matchKey)}
+                      >
+                        <Settings size={16} />
+                        Bearbeiten
                       </button>
-                    </div>
-                  </article>
-                ))
+
+                      {isEditing && (
+                        <div className="adminEditGrid">
+                          <label className="adminCourtSelect">
+                            Platz ändern
+                            <select
+                              value={match.court}
+                              onChange={(event) =>
+                                changeCourt(match, Number(event.target.value))
+                              }
+                            >
+                              <option value={1}>Platz 1</option>
+                              <option value={2}>Platz 2</option>
+                              <option value={3}>Platz 3</option>
+                              <option value={4}>Platz 4</option>
+                              <option value={5}>Platz 5</option>
+                              <option value={6}>Platz 6 Reserve</option>
+                            </select>
+                          </label>
+
+                          <label className="adminCourtSelect">
+                            Uhrzeit ändern
+                            <input
+                              type="time"
+                              value={getTimePart(match.time)}
+                              onChange={(event) => {
+                                const date = getDatePart(match.time);
+                                const nextTime =
+                                  date === "Ohne Datum"
+                                    ? event.target.value
+                                    : `${date} ${event.target.value}`;
+
+                                changeTime(match, nextTime);
+                              }}
+                            />
+                          </label>
+                        </div>
+                      )}
+
+                      <div className="adminActions">
+                        {match.status === "planned" && (
+                          <button type="button" onClick={() => startMatch(match)}>
+                            <Play size={18} />
+                            Spiel starten
+                          </button>
+                        )}
+
+                        {match.status === "live" && (
+                          <button type="button" onClick={() => undoStartMatch(match)}>
+                            <Square size={18} />
+                            Start rückgängig
+                          </button>
+                        )}
+
+                        <button type="button" onClick={() => setSelectedMatch(match)}>
+                          <Trophy size={18} />
+                          Ergebnis
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })
               )}
             </section>
           ))}

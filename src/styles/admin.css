@@ -37,7 +37,7 @@
   background: var(--red);
   color: white;
   border-radius: 999px;
-  padding: 11px 14px;
+  padding: 10px 12px;
   font-weight: 950;
   cursor: pointer;
   display: inline-flex;
@@ -49,23 +49,23 @@
 .adminGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-  margin-bottom: 26px;
+  gap: 14px;
+  margin-bottom: 22px;
 }
 
 .adminGrid article,
 .adminMatchCard {
   background: rgba(20, 20, 20, 0.96);
   border: 1px solid #2b2b2b;
-  border-radius: 24px;
-  padding: 20px;
+  border-radius: 22px;
+  padding: 18px;
   box-shadow: 0 14px 36px rgba(0, 0, 0, 0.35);
 }
 
 .adminGrid b {
   display: block;
-  font-size: 34px;
-  margin-bottom: 6px;
+  font-size: 32px;
+  margin-bottom: 4px;
 }
 
 .adminGrid span,
@@ -101,17 +101,37 @@
   font-size: 34px;
 }
 
-.adminResetButton {
+.adminHeaderActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.adminResetButton,
+.adminDeleteButton {
   border: 1px solid #3a3a3a;
-  background: #050505;
   color: white;
   border-radius: 999px;
-  padding: 11px 14px;
+  padding: 10px 13px;
   font-weight: 950;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  transition: 0.2s;
+}
+
+.adminResetButton {
+  background: #050505;
+}
+
+.adminDeleteButton {
+  border: none;
+  background: #7a0f17;
+}
+
+.adminDeleteButton:hover {
+  background: #a31420;
 }
 
 .adminMatchList {
@@ -121,40 +141,54 @@
 }
 
 .adminMatchCard {
-  border-radius: 26px;
+  border-radius: 22px;
   display: grid;
-  gap: 14px;
+  gap: 10px;
+  border-left: 5px solid var(--red);
+}
+
+.adminMatchCardCompact {
+  padding: 12px !important;
 }
 
 .adminMatchCard-live {
-  border: 2px solid var(--green);
+  border-left-color: var(--green);
   box-shadow: 0 18px 42px rgba(24, 169, 87, 0.22);
 }
 
 .adminMatchCard-done {
-  opacity: 0.78;
+  border-left-color: #666;
+  opacity: 0.82;
 }
 
 .adminMatchTop {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   align-items: flex-start;
 }
 
 .adminMatchTop b {
   display: block;
-  font-size: 24px;
+  font-size: 16px;
+  line-height: 1.15;
+}
+
+.adminMatchTop span {
+  display: block;
+  font-size: 12px;
+  margin-top: 2px;
 }
 
 .adminMatchTop em {
   background: var(--red);
   color: white;
   border-radius: 999px;
-  padding: 7px 12px;
-  font-size: 12px;
+  padding: 6px 9px;
+  font-size: 11px;
   font-style: normal;
   font-weight: 950;
+  white-space: nowrap;
 }
 
 .adminMatchCard-live .adminMatchTop em {
@@ -168,24 +202,34 @@
 .adminMatchCard small {
   color: var(--red-light);
   font-weight: 950;
+  line-height: 1.25;
+  font-size: 12px;
 }
 
 .adminPlayers {
   display: grid;
-  gap: 5px;
+  gap: 3px;
 }
 
 .adminPlayers strong {
-  font-size: 22px;
+  font-size: 17px;
+  line-height: 1.18;
+}
+
+.adminPlayers span {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .adminInfo,
 .adminResult {
   width: fit-content;
   margin: 0;
-  padding: 10px 12px;
-  border-radius: 14px;
+  padding: 8px 10px;
+  border-radius: 12px;
   font-weight: 950;
+  font-size: 12px;
 }
 
 .adminInfo {
@@ -201,7 +245,12 @@
 .adminActions {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
+}
+
+.adminActions button {
+  font-size: 13px;
+  padding: 9px 11px;
 }
 
 .adminLogin {
@@ -256,103 +305,62 @@
   text-align: left;
 }
 
-@media (max-width: 700px) {
-  .adminGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .adminSectionHeader {
-    display: grid;
-  }
-
-  .adminSectionHeader h2 {
-    font-size: 28px;
-  }
-}
-.adminHeaderActions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.adminDeleteButton {
-  border: none;
-  background: #7a0f17;
-  color: white;
-  border-radius: 999px;
-  padding: 11px 14px;
-  font-weight: 950;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  transition: 0.2s;
-}
-
-.adminDeleteButton:hover {
-  background: #a31420;
-}
-
-@media (max-width: 700px) {
-  .adminHeaderActions {
-    display: grid;
-    gap: 10px;
-  }
-
-  .adminHeaderActions button {
-    width: 100%;
-    justify-content: center;
-  }
-}
 .adminCourtSelect {
   display: grid;
   gap: 8px;
   color: var(--muted);
   font-weight: 900;
+  font-size: 12px;
 }
 
-.adminCourtSelect select {
-  width: 100%;
-  background: #050505;
-  color: white;
-  border: 2px solid #333;
-  border-radius: 16px;
-  padding: 11px 13px;
-  font-size: 15px;
-  font-weight: 850;
-  outline: none;
-}
-
-.adminCourtSelect select:focus {
-  border-color: var(--red);
-}
-.adminEditGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
+.adminCourtSelect select,
 .adminCourtSelect input {
   width: 100%;
   background: #050505;
   color: white;
   border: 2px solid #333;
-  border-radius: 16px;
-  padding: 11px 13px;
-  font-size: 15px;
+  border-radius: 14px;
+  padding: 10px 11px;
+  font-size: 14px;
   font-weight: 850;
   outline: none;
 }
 
+.adminCourtSelect select:focus,
 .adminCourtSelect input:focus {
   border-color: var(--red);
 }
 
-@media (max-width: 700px) {
-  .adminEditGrid {
-    grid-template-columns: 1fr;
-  }
+.adminEditToggle {
+  width: fit-content;
+  background: transparent;
+  border: 1px solid #333;
+  color: #aeb7c5;
+  border-radius: 999px;
+  padding: 7px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 950;
+  cursor: pointer;
 }
+
+.adminEditToggle:hover {
+  border-color: var(--red);
+  color: white;
+}
+
+.adminEditGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  background: rgba(5, 5, 5, 0.55);
+  border: 1px solid #2b2b2b;
+  border-radius: 16px;
+  padding: 10px;
+}
+
 .adminTopHeader {
   display: flex;
   justify-content: space-between;
@@ -394,6 +402,32 @@
 }
 
 @media (max-width: 700px) {
+  .adminGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .adminSectionHeader {
+    display: grid;
+  }
+
+  .adminSectionHeader h2 {
+    font-size: 28px;
+  }
+
+  .adminHeaderActions {
+    display: grid;
+    gap: 10px;
+  }
+
+  .adminHeaderActions button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .adminEditGrid {
+    grid-template-columns: 1fr;
+  }
+
   .adminTopHeader {
     display: grid;
   }

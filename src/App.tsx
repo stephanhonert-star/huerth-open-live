@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, onSnapshot, runTransaction } from "firebase/firestore";
 import Header from "./components/Header";
 import Navigation from "./components/Navigation";
 import { players as defaultPlayers } from "./data/players";
@@ -71,6 +71,10 @@ function App() {
   const [club, setClub] = useState("Alle");
   const [players, setPlayers] = useState<Player[]>(loadPlayers);
   const [matches, setMatches] = useState<Match[]>(loadMatches);
+  const [visitorStats, setVisitorStats] = useState({
+    today: 0,
+    total: 0,
+  });
 
   useEffect(() => {
     const unsubscribe = onSnapshot(doc(db, "huerthOpen", "live"), (snapshot) => {
@@ -92,6 +96,54 @@ function App() {
         localStorage.setItem(DRAW_STORAGE_KEY, JSON.stringify(data.draws));
         window.dispatchEvent(new Event("huerthOpenDrawsUpdated"));
       }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    const localKey = `huerthOpenVisitor-${today}`;
+    const statsRef = doc(db, "huerthOpen", "visitors");
+
+    async function countVisit() {
+      if (localStorage.getItem(localKey)) return;
+
+      await runTransaction(db, async (transaction) => {
+        const snapshot = await transaction.get(statsRef);
+        const data = snapshot.data();
+
+        const currentTodayDate = data?.todayDate;
+        const currentToday =
+          currentTodayDate === today ? Number(data?.todayCount || 0) : 0;
+        const currentTotal = Number(data?.totalCount || 0);
+
+        transaction.set(
+          statsRef,
+          {
+            todayDate: today,
+            todayCount: currentToday + 1,
+            totalCount: currentTotal + 1,
+            updatedAt: new Date().toISOString(),
+          },
+          { merge: true }
+        );
+      });
+
+      localStorage.setItem(localKey, "true");
+    }
+
+    countVisit();
+
+    const unsubscribe = onSnapshot(statsRef, (snapshot) => {
+      const data = snapshot.data();
+
+      if (!data) return;
+
+      setVisitorStats({
+        today: Number(data.todayCount || 0),
+        total: Number(data.totalCount || 0),
+      });
     });
 
     return () => unsubscribe();
@@ -160,6 +212,7 @@ function App() {
             allMatches={matches}
             done={done}
             players={players}
+            visitorStats={visitorStats}
             onChangeTab={changeTab}
           />
         )}

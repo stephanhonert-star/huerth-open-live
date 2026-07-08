@@ -31,6 +31,32 @@ function findMatch(draws: Draw[], matchId: string): DrawMatch | undefined {
   return undefined;
 }
 
+export function updateDrawSchedule(
+  drawMatchId: string | undefined,
+  values: {
+    court?: number;
+    time?: string;
+  }
+): Draw[] {
+  if (!drawMatchId) return loadDraws();
+
+  const draws = loadDraws();
+  const currentMatch = findMatch(draws, drawMatchId);
+
+  if (!currentMatch) return draws;
+
+  if (typeof values.court === "number") {
+    currentMatch.court = values.court;
+  }
+
+  if (typeof values.time === "string") {
+    currentMatch.time = values.time;
+  }
+
+  saveDraws(draws);
+  return draws;
+}
+
 export function updateDrawAfterResult(
   drawMatchId: string,
   winnerName: string,

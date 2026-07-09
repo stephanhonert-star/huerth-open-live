@@ -24,6 +24,14 @@ function normalizeCompetition(value: string) {
   return competition;
 }
 
+function getCompetitionFromText(text: string) {
+  const match = text.match(/Bewerb:\s*(.+?)\s+Zulassungsliste/i);
+
+  if (!match) return "Unbekannt";
+
+  return normalizeCompetition(match[1]);
+}
+
 function normalizeName(lastName: string, firstName: string) {
   return `${clean(lastName)} ${clean(firstName)}`;
 }
@@ -31,32 +39,38 @@ function normalizeName(lastName: string, firstName: string) {
 function cleanClub(value: string) {
   return clean(
     value
+      .replace(/\s+\d+\s*-\s*$/g, "")
       .replace(/\s+\d+(?:\s*-\s*\d+)*\s*-?\s*$/g, "")
+      .replace(/\s+Nachrücker.*$/i, "")
       .replace(/\s+nu\s+\.Dokument.*$/i, "")
   );
 }
 
-function parsePlayerLine(line: string, competition: string): Player | null {
-  const cleaned = clean(line);
+function parsePlayersFromPageText(pageText: string, competition: string): Player[] {
+  const players: Player[] = [];
 
-  if (!cleaned) return null;
-  if (cleaned.includes("Setz.")) return null;
-  if (cleaned.startsWith("nu .Dokument")) return null;
-  if (/^\d+\s+-/.test(cleaned)) return null;
+  const playerRegex =
+    /(?:^|\s)\d+\s+(?:\d+\s+)?([\p{L}][\p{L}\-'. ]+?),\s*([\p{L}][\p{L}\-'. ]+?)\s+((?:19|20)\d{2})\s+LK\s*([0-9]{1,2}[,.][0-9])\s+LK\s*[0-9]{1,2}[,.][0-9]\s+(?:[A-Z]\d{2}\/\d+|-)\s+(\d{8})\s+(.+?)(?=\s+\d+\s+(?:\d+\s+)?[\p{L}][\p{L}\-'. ]+?,\s*[\p{L}]|\s+Nachrücker|\s+nu\s+\.Dokument|$)/gu;
 
-  const match = cleaned.match(
-    /^\d+\s+(?:\d+\s+)?(.+?),\s+(.+?)\s+((?:19|20)\d{2})\s+LK\s*([0-9]{1,2}[,.][0-9])\s+.*?\b\d{8}\b\s+(.+)$/u
-  );
+  const matches = [...pageText.matchAll(playerRegex)];
 
-  if (!match) return null;
+  matches.forEach((match) => {
+    const lastName = match[1];
+    const firstName = match[2];
+    const year = match[3];
+    const lk = match[4];
+    const club = match[6];
 
-  return {
-    name: normalizeName(match[1], match[2]),
-    year: match[3],
-    lk: match[4].replace(".", ","),
-    club: cleanClub(match[5]),
-    competition,
-  };
+    players.push({
+      name: normalizeName(lastName, firstName),
+      year,
+      lk: lk.replace(".", ","),
+      club: cleanClub(club),
+      competition,
+    });
+  });
+
+  return players;
 }
 
 export async function parsePlayersFromPdf(file: File): Promise<PdfImportResult> {
@@ -65,7 +79,6 @@ export async function parsePlayersFromPdf(file: File): Promise<PdfImportResult> 
 
   let debugText = "";
   const players: Player[] = [];
-  let currentCompetition = "Unbekannt";
 
   for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
     const page = await pdf.getPage(pageNumber);
@@ -76,45 +89,31 @@ export async function parsePlayersFromPdf(file: File): Promise<PdfImportResult> 
       .filter(Boolean)
       .join(" ");
 
-    const lines = pageText
-      .replace(/(Bewerb:)/g, "\n$1")
-      .replace(/(Zulassungsliste)/g, "\n$1")
-      .replace(/(Hauptfeld)/g, "\n$1")
-      .replace(/(Nachrücker)/g, "\n$1")
-      .replace(/(Setz\.)/g, "\n$1")
-      .replace(/\s+(?=\d+\s*$)/g, "\n")
-      .replace(
-        /\s+(?=\d+\s+(?:\d+\s+)?[\p{L}][\p{L}\-'. ]+,)/gu,
-        "\n"
-      )
-      .replace(/\s+(?=nu\s+\.Dokument)/g, "\n")
-      .split("\n")
-      .map(clean)
-      .filter(Boolean);
+    const competition = getCompetitionFromText(pageText);
+    const pagePlayers = parsePlayersFromPageText(pageText, competition);
 
-    debugText += `\n\n--- SEITE ${pageNumber} ---\n${lines.join("\n")}`;
+    debugText += `\n\n--- SEITE ${pageNumber} ---\n${pageText}`;
+    debugText += `\n\n--- GEFUNDENE SPIELER SEITE ${pageNumber} ---\n${pagePlayers
+      .map((player) => `${player.name} | ${player.year} | ${player.lk} | ${player.club} | ${player.competition}`)
+      .join("\n")}`;
 
-    for (const line of lines) {
-      if (line.startsWith("Bewerb:")) {
-        currentCompetition = normalizeCompetition(line);
-        continue;
+    pagePlayers.forEach((player) => {
+      const exists = players.some(
+        (existing) =>
+          existing.name === player.name &&
+          existing.competition === player.competition
+      );
+
+      if (!exists) {
+        players.push(player);
       }
-
-      const player = parsePlayerLine(line, currentCompetition);
-
-      if (player) {
-        const exists = players.some(
-          (existing) =>
-            existing.name === player.name &&
-            existing.competition === player.competition
-        );
-
-        if (!exists) {
-          players.push(player);
-        }
-      }
-    }
+    });
   }
+
+  console.log(
+    "Importierte Spieler:",
+    players.map((player) => player.name)
+  );
 
   return {
     players,

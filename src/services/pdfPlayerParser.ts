@@ -45,7 +45,7 @@ function parsePlayerLine(line: string, competition: string): Player | null {
   if (/^\d+\s+-/.test(cleaned)) return null;
 
   const match = cleaned.match(
-    /^\d+\s+(?:\d+\s+)?(.+?),\s+(.+?)\s+((?:19|20)\d{2})\s+LK\s*([0-9]{1,2}[,.][0-9])\s+.*?\b\d{8}\b\s+(.+)$/
+    /^\d+\s+(?:\d+\s+)?(.+?),\s+(.+?)\s+((?:19|20)\d{2})\s+LK\s*([0-9]{1,2}[,.][0-9])\s+.*?\b\d{8}\b\s+(.+)$/u
   );
 
   if (!match) return null;
@@ -80,9 +80,13 @@ export async function parsePlayersFromPdf(file: File): Promise<PdfImportResult> 
       .replace(/(Bewerb:)/g, "\n$1")
       .replace(/(Zulassungsliste)/g, "\n$1")
       .replace(/(Hauptfeld)/g, "\n$1")
+      .replace(/(Nachrücker)/g, "\n$1")
       .replace(/(Setz\.)/g, "\n$1")
       .replace(/\s+(?=\d+\s*$)/g, "\n")
-      .replace(/\s+(?=\d+\s+(?:\d+\s+)?[A-ZÄÖÜa-zäöüß][A-Za-zÄÖÜäöüß\-'. ]+,)/g, "\n")
+      .replace(
+        /\s+(?=\d+\s+(?:\d+\s+)?[\p{L}][\p{L}\-'. ]+,)/gu,
+        "\n"
+      )
       .replace(/\s+(?=nu\s+\.Dokument)/g, "\n")
       .split("\n")
       .map(clean)

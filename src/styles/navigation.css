@@ -3,13 +3,13 @@
   left: 50%;
   bottom: 14px;
   transform: translateX(-50%);
-  width: min(820px, calc(100% - 18px));
+  width: min(760px, calc(100% - 18px));
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 4px;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
   background: rgba(21, 21, 21, 0.96);
-  padding: 8px;
-  border-radius: 26px;
+  padding: 10px;
+  border-radius: 28px;
   border: 1px solid #303030;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
   z-index: 50;
@@ -18,44 +18,59 @@
 .nav button {
   border: 0;
   background: transparent;
-  color: #ddd;
+  color: #d8d8d8;
   border-radius: 18px;
-  padding: 8px 2px;
+  padding: 10px 4px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  font-weight: 800;
+  gap: 6px;
+  font-weight: 850;
+  font-size: 15px;
   cursor: pointer;
-  transition: 0.2s;
+  transition: all 0.2s ease;
 }
 
 .nav button.active {
-  background: var(--red);
+  background: linear-gradient(180deg, var(--red), #940b25);
   color: white;
+  box-shadow: 0 8px 20px rgba(184, 15, 47, 0.35);
 }
 
-.nav button:hover {
+.nav button:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.05);
   color: white;
 }
 
 .nav svg {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
 }
 
 @media (max-width: 700px) {
   .nav {
-    width: calc(100% - 12px);
-    padding: 6px;
-    gap: 2px;
+    width: calc(100% - 14px);
+    padding: 8px;
+    gap: 4px;
+    border-radius: 24px;
   }
 
   .nav button {
-    padding: 6px 2px;
-    font-size: 11px;
-    gap: 2px;
+    padding: 9px 2px;
+    font-size: 13px;
+    gap: 4px;
+  }
+
+  .nav svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+@media (max-width: 420px) {
+  .nav button {
+    font-size: 12px;
   }
 
   .nav svg {

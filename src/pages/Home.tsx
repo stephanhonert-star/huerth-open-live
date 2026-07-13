@@ -40,10 +40,24 @@ function getTimePart(time: string) {
   return time.includes(".") ? time.split(" ").slice(1).join(" ") : time;
 }
 
-function getNextMatchText(matches: Match[]) {
-  if (matches.length === 0) return "Kein Spiel geplant";
+function getSortValue(time: string) {
+  if (!time.includes(".")) return 99999999;
 
-  const next = [...matches].sort((a, b) => a.time.localeCompare(b.time))[0];
+  const [datePart, clockPart = "00:00"] = time.split(" ");
+  const [day = 0, month = 0] = datePart.split(".").map(Number);
+  const [hour = 0, minute = 0] = clockPart.split(":").map(Number);
+
+  return month * 1000000 + day * 10000 + hour * 100 + minute;
+}
+
+function getNextMatchText(matches: Match[]) {
+  if (matches.length === 0) {
+    return "Spielplan folgt nach Auslosung";
+  }
+
+  const next = [...matches].sort(
+    (a, b) => getSortValue(a.time) - getSortValue(b.time)
+  )[0];
 
   return `${getTimePart(next.time)} · Platz ${next.court}`;
 }
@@ -62,6 +76,8 @@ function Home({
   const realDone = done.filter(isRealMatch);
   const realMatches = allMatches.filter(isRealMatch);
 
+  const centerCourtLive = realLive.find((match) => match.court === 1);
+
   const dates = Array.from(
     new Set(realPlanned.map((match) => getDatePart(match.time)))
   ).sort();
@@ -71,20 +87,35 @@ function Home({
   const visiblePlanned =
     selectedDate === "Alle"
       ? realPlanned
-      : realPlanned.filter((match) => getDatePart(match.time) === selectedDate);
+      : realPlanned.filter(
+          (match) => getDatePart(match.time) === selectedDate
+        );
 
   return (
     <>
       <Countdown />
 
       <section className="eventHero">
-        <p>TOURNAMENT CENTER</p>
+        <div className="eventHeroTop">
+          <div className="eventHeroText">
+            <p>TOURNAMENT CENTER</p>
 
-        <h1>{tournamentStore.tournament.name}</h1>
+            <h1>{tournamentStore.tournament.name}</h1>
 
-        <span>
-          {tournamentStore.tournament.date} · {tournamentStore.tournament.club}
-        </span>
+            <span>
+              {tournamentStore.tournament.date} ·{" "}
+              {tournamentStore.tournament.club}
+            </span>
+          </div>
+
+          <div className="eventHeroHighlight">
+            <b>{realLive.length}</b>
+            <span>
+              <i className={realLive.length > 0 ? "livePulse" : ""} />
+              aktuell live
+            </span>
+          </div>
+        </div>
 
         <div className="eventStats">
           <div>
@@ -99,7 +130,7 @@ function Home({
 
           <div>
             <b>5 + 1</b>
-            <small>Matchplätze</small>
+            <small>Plätze</small>
           </div>
 
           <div>
@@ -107,14 +138,14 @@ function Home({
             <small>Turniertage</small>
           </div>
 
-          <div>
+          <div className="visitorStat">
             <b>{visitorStats.today}</b>
-            <small>Besucher heute</small>
+            <small>Heute</small>
           </div>
 
-          <div>
+          <div className="visitorStat">
             <b>{visitorStats.total}</b>
-            <small>Besuche gesamt</small>
+            <small>Gesamt</small>
           </div>
         </div>
 
@@ -126,33 +157,91 @@ function Home({
         </div>
       </section>
 
+      {centerCourtLive && (
+        <section
+          className="homeCenterCourt"
+          onClick={() => onChangeTab("courts")}
+        >
+          <div className="homeCenterCourtTop">
+            <div>
+              <p>
+                <i className="livePulse" />
+                CENTER COURT LIVE
+              </p>
+
+              <h2>Platz 1</h2>
+            </div>
+
+            <span>LIVE</span>
+          </div>
+
+          <small>{centerCourtLive.competition}</small>
+
+          <div className="homeCenterCourtPlayers">
+            <strong>{centerCourtLive.a}</strong>
+            <em>gegen</em>
+            <strong>{centerCourtLive.b}</strong>
+          </div>
+
+          <div className="homeCenterCourtBottom">
+            <span>
+              läuft seit {centerCourtLive.since || "kurzem"} Uhr
+            </span>
+
+            <b>Platz ansehen →</b>
+          </div>
+        </section>
+      )}
+
       <section className="liveTicker">
-        <button className="tickerItem" onClick={() => onChangeTab("plan")}>
+        <button
+          type="button"
+          className="tickerItem"
+          onClick={() => onChangeTab("plan")}
+        >
           <span>🎾</span>
+
           <div>
             <b>{realPlanned.length}</b>
             <small>Geplante Spiele</small>
           </div>
         </button>
 
-        <button className="tickerItem" onClick={() => onChangeTab("courts")}>
-          <span>🟢</span>
+        <button
+          type="button"
+          className={`tickerItem ${realLive.length > 0 ? "tickerLive" : ""}`}
+          onClick={() => onChangeTab("courts")}
+        >
+          <span className="tickerLiveIcon">
+            {realLive.length > 0 && <i className="livePulse" />}
+          </span>
+
           <div>
             <b>{realLive.length}</b>
-            <small>Live auf Platz</small>
+            <small>Aktuell live</small>
           </div>
         </button>
 
-        <button className="tickerItem" onClick={() => onChangeTab("start")}>
+        <button
+          type="button"
+          className="tickerItem"
+          onClick={() => onChangeTab("start")}
+        >
           <span>🏆</span>
+
           <div>
             <b>{realDone.length}</b>
             <small>Beendet</small>
           </div>
         </button>
 
-        <button className="tickerItem" onClick={() => onChangeTab("plan")}>
+        <button
+          type="button"
+          className="tickerItem tickerNext"
+          onClick={() => onChangeTab("plan")}
+        >
           <span>⏰</span>
+
           <div>
             <b>{getNextMatchText(realPlanned)}</b>
             <small>Nächstes Match</small>
@@ -167,46 +256,84 @@ function Home({
         <h2>⏭️ Als Nächstes</h2>
       </section>
 
-      <section className="competitionChips">
-        <button
-          type="button"
-          className={selectedDate === "Alle" ? "active" : ""}
-          onClick={() => setSelectedDate("Alle")}
-        >
-          Alle <span>{realPlanned.length}</span>
-        </button>
+      {realPlanned.length > 0 ? (
+        <>
+          <section className="competitionChips">
+            <button
+              type="button"
+              className={selectedDate === "Alle" ? "active" : ""}
+              onClick={() => setSelectedDate("Alle")}
+            >
+              Alle <span>{realPlanned.length}</span>
+            </button>
 
-        {dates.map((date) => (
-          <button
-            type="button"
-            key={date}
-            className={selectedDate === date ? "active" : ""}
-            onClick={() => setSelectedDate(date)}
-          >
-            {date}{" "}
-            <span>
-              {realPlanned.filter((match) => getDatePart(match.time) === date).length}
-            </span>
-          </button>
-        ))}
-      </section>
+            {dates.map((date) => (
+              <button
+                type="button"
+                key={date}
+                className={selectedDate === date ? "active" : ""}
+                onClick={() => setSelectedDate(date)}
+              >
+                {date}{" "}
+                <span>
+                  {
+                    realPlanned.filter(
+                      (match) => getDatePart(match.time) === date
+                    ).length
+                  }
+                </span>
+              </button>
+            ))}
+          </section>
 
-      <section className="cards">
-        {visiblePlanned.map((match) => (
-          <MatchCard key={`${match.time}-${match.court}-${match.a}`} match={match} />
-        ))}
-      </section>
+          <section className="cards">
+            {visiblePlanned.map((match) => (
+              <MatchCard
+                key={`${match.time}-${match.court}-${match.a}`}
+                match={match}
+              />
+            ))}
+          </section>
+        </>
+      ) : (
+        <section className="homeWaitingCard">
+          <span>📅</span>
+
+          <div>
+            <b>Spielplan folgt nach der Auslosung</b>
+            <small>
+              Die aktuellen Spielzeiten werden am 16.07.2026 veröffentlicht.
+            </small>
+          </div>
+        </section>
+      )}
 
       <section className="sectionTitle">
         <p>BEREITS BEENDET</p>
         <h2>🏆 Letzte Ergebnisse</h2>
       </section>
 
-      <section className="cards">
-        {realDone.map((match) => (
-          <MatchCard key={`${match.time}-${match.court}-${match.a}`} match={match} />
-        ))}
-      </section>
+      {realDone.length > 0 ? (
+        <section className="cards">
+          {realDone.map((match) => (
+            <MatchCard
+              key={`${match.time}-${match.court}-${match.a}`}
+              match={match}
+            />
+          ))}
+        </section>
+      ) : (
+        <section className="homeWaitingCard compact">
+          <span>🏆</span>
+
+          <div>
+            <b>Noch keine Ergebnisse</b>
+            <small>
+              Die ersten Resultate erscheinen hier direkt nach Spielende.
+            </small>
+          </div>
+        </section>
+      )}
     </>
   );
 }

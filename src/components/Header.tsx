@@ -4,7 +4,15 @@ import AudioPlayer from "./AudioPlayer";
 function Header() {
   return (
     <header className="hero">
-      <img src={header} alt="Hürth Open" className="heroHeader" />
+      <img
+        src={header}
+        alt="Hürth Open"
+        className="heroHeader"
+        style={{
+          width: "min(620px, 96%)",
+          height: "auto",
+        }}
+      />
 
       <p>
         sponsored by <strong>DMF Consulting GmbH</strong>

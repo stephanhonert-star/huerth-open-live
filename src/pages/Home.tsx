@@ -110,6 +110,7 @@ function Home({
 
           <div className="eventHeroHighlight">
             <b>{realLive.length}</b>
+
             <span>
               <i className={realLive.length > 0 ? "livePulse" : ""} />
               aktuell live
@@ -140,12 +141,12 @@ function Home({
 
           <div className="visitorStat">
             <b>{visitorStats.today}</b>
-            <small>Heute</small>
+            <small>Besucher heute</small>
           </div>
 
           <div className="visitorStat">
             <b>{visitorStats.total}</b>
-            <small>Gesamt</small>
+            <small>Besuche gesamt</small>
           </div>
         </div>
 

@@ -108,11 +108,15 @@ function Home({
             </span>
           </div>
 
-          <div className="eventHeroHighlight">
+          <div
+            className={`eventHeroHighlight ${
+              realLive.length > 0 ? "hasLiveMatches" : ""
+            }`}
+          >
             <b>{realLive.length}</b>
 
             <span>
-              <i className={realLive.length > 0 ? "livePulse" : ""} />
+              <i className={realLive.length > 0 ? "livePulse" : "offlineDot"} />
               aktuell live
             </span>
           </div>
@@ -120,32 +124,49 @@ function Home({
 
         <div className="eventStats">
           <div>
-            <b>{players.length}</b>
+            <b>
+              <span className="eventStatIcon">👥</span>
+              {players.length}
+            </b>
             <small>Teilnehmer</small>
           </div>
 
           <div>
-            <b>{tournamentStore.tournament.competitions}</b>
+            <b>
+              <span className="eventStatIcon">🏆</span>
+              {tournamentStore.tournament.competitions}
+            </b>
             <small>Konkurrenzen</small>
           </div>
 
           <div>
-            <b>5 + 1</b>
+            <b>
+              <span className="eventStatIcon">🎾</span>5 + 1
+            </b>
             <small>Plätze</small>
           </div>
 
           <div>
-            <b>16</b>
+            <b>
+              <span className="eventStatIcon">📅</span>
+              16
+            </b>
             <small>Turniertage</small>
           </div>
 
           <div className="visitorStat">
-            <b>{visitorStats.today}</b>
+            <b>
+              <span className="eventStatIcon">👁️</span>
+              {visitorStats.today}
+            </b>
             <small>Besucher heute</small>
           </div>
 
           <div className="visitorStat">
-            <b>{visitorStats.total}</b>
+            <b>
+              <span className="eventStatIcon">🌍</span>
+              {visitorStats.total}
+            </b>
             <small>Besuche gesamt</small>
           </div>
         </div>
@@ -214,7 +235,7 @@ function Home({
           onClick={() => onChangeTab("courts")}
         >
           <span className="tickerLiveIcon">
-            {realLive.length > 0 && <i className="livePulse" />}
+            <i className={realLive.length > 0 ? "livePulse" : "offlineDot"} />
           </span>
 
           <div>

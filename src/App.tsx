@@ -6,7 +6,6 @@ import { players as defaultPlayers } from "./data/players";
 import Admin from "./pages/Admin";
 import Courts from "./pages/Courts";
 import Draws from "./pages/Draws";
-import Gastro from "./pages/Gastro";
 import Home from "./pages/Home";
 import Players from "./pages/Players";
 import Schedule from "./pages/Schedule";
@@ -21,7 +20,6 @@ import "./styles/countdown.css";
 import "./styles/cards.css";
 import "./styles/navigation.css";
 import "./styles/players.css";
-import "./styles/gastro.css";
 import "./styles/schedule.css";
 import "./styles/courts.css";
 import "./styles/court-overview.css";
@@ -232,12 +230,12 @@ function App() {
           />
         )}
 
-        {tab === "gastro" && <Gastro />}
-
         {tab === "admin" && <Admin />}
       </main>
 
-      {tab !== "admin" && <Navigation activeTab={tab} onChangeTab={changeTab} />}
+      {tab !== "admin" && (
+        <Navigation activeTab={tab} onChangeTab={changeTab} />
+      )}
     </div>
   );
 }

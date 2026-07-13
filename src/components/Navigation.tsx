@@ -1,4 +1,10 @@
-import { CalendarDays, GitBranch, Home, MapPin, Utensils, Users } from "lucide-react";
+import {
+  CalendarDays,
+  GitBranch,
+  Home,
+  MapPin,
+  Users,
+} from "lucide-react";
 import type { Tab } from "../types";
 
 type NavigationProps = {
@@ -9,34 +15,44 @@ type NavigationProps = {
 function Navigation({ activeTab, onChangeTab }: NavigationProps) {
   return (
     <nav className="nav">
-      <button onClick={() => onChangeTab("start")} className={activeTab === "start" ? "active" : ""}>
+      <button
+        onClick={() => onChangeTab("start")}
+        className={activeTab === "start" ? "active" : ""}
+      >
         <Home />
         Start
       </button>
 
-      <button onClick={() => onChangeTab("courts")} className={activeTab === "courts" ? "active" : ""}>
+      <button
+        onClick={() => onChangeTab("courts")}
+        className={activeTab === "courts" ? "active" : ""}
+      >
         <MapPin />
         Plätze
       </button>
 
-      <button onClick={() => onChangeTab("plan")} className={activeTab === "plan" ? "active" : ""}>
+      <button
+        onClick={() => onChangeTab("plan")}
+        className={activeTab === "plan" ? "active" : ""}
+      >
         <CalendarDays />
         Plan
       </button>
 
-      <button onClick={() => onChangeTab("draws")} className={activeTab === "draws" ? "active" : ""}>
+      <button
+        onClick={() => onChangeTab("draws")}
+        className={activeTab === "draws" ? "active" : ""}
+      >
         <GitBranch />
         Baum
       </button>
 
-      <button onClick={() => onChangeTab("teilnehmer")} className={activeTab === "teilnehmer" ? "active" : ""}>
+      <button
+        onClick={() => onChangeTab("teilnehmer")}
+        className={activeTab === "teilnehmer" ? "active" : ""}
+      >
         <Users />
         Spieler
-      </button>
-
-      <button onClick={() => onChangeTab("gastro")} className={activeTab === "gastro" ? "active" : ""}>
-        <Utensils />
-        Gastro
       </button>
     </nav>
   );

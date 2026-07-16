@@ -662,6 +662,208 @@ function applyPreDecidedMatches(
   }
 }
 
+
+function getUniqueTimesNearY(
+  items: PositionedText[],
+  y: number
+): string[] {
+  return Array.from(
+    new Set(
+      items
+        .filter(
+          (item) =>
+            Math.abs(item.y - y) <= 4 &&
+            /^\d{2}\.\d{2}\.\s+\d{2}:\d{2}$/.test(item.text)
+        )
+        .map((item) => item.text)
+    )
+  );
+}
+
+function findCommonTime(first: string[], second: string[]) {
+  return first.find((time) => second.includes(time)) || "";
+}
+
+function createDamen40Draw(
+  groupItems: PositionedText[],
+  finalItems: PositionedText[]
+): {
+  draw: Draw;
+  playerCount: number;
+} {
+  const competition = "Damen 40 Einzel";
+  const bracket = "hauptfeld" as const;
+  const competitionCode = getCompetitionCode(competition, bracket);
+  const baseId = `${slug(competition)}-${bracket}`;
+
+  const playerItems = groupItems
+    .map((item) => ({
+      item,
+      player: parseFullPlayer(item.text),
+    }))
+    .filter(
+      (
+        entry
+      ): entry is {
+        item: PositionedText;
+        player: DrawPlayer;
+      } => Boolean(entry.player)
+    )
+    .filter((entry) => entry.item.x < 220)
+    .sort((a, b) => b.item.y - a.item.y);
+
+  const uniquePlayers: Array<{
+    item: PositionedText;
+    player: DrawPlayer;
+  }> = [];
+
+  for (const entry of playerItems) {
+    if (
+      !uniquePlayers.some(
+        (existing) => existing.player.name === entry.player.name
+      )
+    ) {
+      uniquePlayers.push(entry);
+    }
+  }
+
+  if (uniquePlayers.length !== 6) {
+    throw new Error(
+      `Damen 40 Einzel: Erwartet wurden 6 Spielerinnen, erkannt wurden ${uniquePlayers.length}.`
+    );
+  }
+
+  const groupMatches: DrawMatch[] = [];
+
+  for (let groupIndex = 0; groupIndex < 2; groupIndex++) {
+    const offset = groupIndex * 3;
+    const group = uniquePlayers.slice(offset, offset + 3);
+
+    const rowTimes = group.map((entry) =>
+      getUniqueTimesNearY(groupItems, entry.item.y)
+    );
+
+    const pairings = [
+      {
+        a: 0,
+        b: 1,
+        time: findCommonTime(rowTimes[0], rowTimes[1]),
+      },
+      {
+        a: 0,
+        b: 2,
+        time: findCommonTime(rowTimes[0], rowTimes[2]),
+      },
+      {
+        a: 1,
+        b: 2,
+        time: findCommonTime(rowTimes[1], rowTimes[2]),
+      },
+    ];
+
+    pairings.forEach((pairing, pairingIndex) => {
+      const matchIndex = groupIndex * 3 + pairingIndex + 1;
+      const nr = getMatchNr(1, matchIndex);
+
+      groupMatches.push(
+        addExtra(
+          {
+            id: `${baseId}-gruppe-${groupIndex + 1}-nr${matchIndex}`,
+            competition,
+            bracket,
+            round: "Runde 1",
+            roundIndex: 1,
+            matchIndex,
+            playerA: group[pairing.a].player,
+            playerB: group[pairing.b].player,
+            status: "planned",
+            court: 1,
+            time: pairing.time,
+          },
+          {
+            nr,
+            competitionCode,
+            group: `Gruppe ${groupIndex + 1}`,
+          }
+        )
+      );
+    });
+  }
+
+  const finalTime =
+    finalItems.find((item) =>
+      /^\d{2}\.\d{2}\.\s+\d{2}:\d{2}$/.test(item.text)
+    )?.text || "";
+
+  const finalMatch: DrawMatch = addExtra(
+    {
+      id: `${baseId}-finale`,
+      competition,
+      bracket,
+      round: "Finale",
+      roundIndex: 2,
+      matchIndex: 1,
+      playerA: createEmptyPlayer("Sieger Gruppe 1"),
+      playerB: createEmptyPlayer("Sieger Gruppe 2"),
+      status: "planned",
+      court: 1,
+      time: finalTime,
+      nextMatchId: `${baseId}-winner`,
+      nextSlot: "playerA" as const,
+    },
+    {
+      nr: getMatchNr(2, 1),
+      competitionCode,
+    }
+  );
+
+  const winnerMatch: DrawMatch = addExtra(
+    {
+      id: `${baseId}-winner`,
+      competition,
+      bracket,
+      round: "Sieger",
+      roundIndex: 3,
+      matchIndex: 1,
+      playerA: createEmptyPlayer("Turniersieger"),
+      status: "planned",
+    },
+    {
+      nr: getMatchNr(3, 1),
+      competitionCode,
+    }
+  );
+
+  const draw: Draw = {
+    id: baseId,
+    competition,
+    bracket,
+    title: `${competition} Hauptfeld`,
+    rounds: [
+      {
+        name: "Runde 1",
+        roundIndex: 1,
+        matches: groupMatches,
+      },
+      {
+        name: "Finale",
+        roundIndex: 2,
+        matches: [finalMatch],
+      },
+      {
+        name: "Sieger",
+        roundIndex: 3,
+        matches: [winnerMatch],
+      },
+    ],
+  };
+
+  return {
+    draw,
+    playerCount: uniquePlayers.length,
+  };
+}
+
 function createMatchesFromDraw(draw: Draw): Match[] {
   return draw.rounds
     .flatMap((round) => round.matches)
@@ -829,6 +1031,28 @@ export async function parseDrawFromPdf(
       .join("\n");
 
     try {
+      const competition = getCompetition(items);
+      const pageText = items.map((item) => item.text).join(" ");
+
+      if (
+        competition === "Damen 40 Einzel" &&
+        pageText.includes("Gruppe 1")
+      ) {
+        const finalItems =
+          pageNumber < pdf.numPages
+            ? await getPageItems(pdf, pageNumber + 1)
+            : [];
+
+        const result = createDamen40Draw(items, finalItems);
+
+        draws.push(result.draw);
+        matches.push(...createMatchesFromDraw(result.draw));
+        playerCount += result.playerCount;
+
+        pageNumber++;
+        continue;
+      }
+
       const result = parsePage(items);
 
       draws.push(result.draw);

@@ -594,7 +594,7 @@ function applyPreDecidedMatches(
     let nearestMatchIndex = -1;
     let nearestDistance = Number.POSITIVE_INFINITY;
 
-    firstRound.matches.forEach((match, matchIndex) => {
+    firstRound.matches.forEach((_, matchIndex) => {
       const yA = slots[matchIndex * 2]?.y ?? 0;
       const yB = slots[matchIndex * 2 + 1]?.y ?? yA;
       const matchY = (yA + yB) / 2;

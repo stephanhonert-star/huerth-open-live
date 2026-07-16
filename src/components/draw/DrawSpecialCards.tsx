@@ -63,8 +63,8 @@ export function FinalCard({ match }: SpecialCardProps) {
       </div>
 
       <div className="drawCardMeta">
-        <span>🎾 Center Court</span>
-        <span>🕒 {match.time || "02.08. 14:00"}</span>
+        <span>🎾 Platz {match.court || "offen"}</span>
+        <span>🕒 {match.time || "noch offen"}</span>
       </div>
 
       <i className="drawConnector drawFinalConnector" />

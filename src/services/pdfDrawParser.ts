@@ -131,9 +131,6 @@ function getCompetitionCode(
   return bracket === "nebenrunde" ? `NR ${code}` : code;
 }
 
-function isRoundHeader(text: string): text is DrawRoundName {
-  return ROUND_NAMES.includes(text as DrawRoundName);
-}
 
 function getRoundHeaders(items: PositionedText[]) {
   const headers: PositionedText[] = [];

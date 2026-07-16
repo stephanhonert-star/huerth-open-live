@@ -145,7 +145,7 @@ function parseFullPlayer(text: string): DrawPlayer | null {
   const value = clean(text);
 
   const match = value.match(
-    /^(?:(\d+)\s+)?([^,]+),\s*([^()]+?)\s*\((\d+)(?:\/(?:LK\s*)?([0-9]{1,2}[,.][0-9]|\d+))?\)$/i
+    /^(?:\[?(\d+)\]?\s*)?([^,]+),\s*([^()]+?)\s*\((\d+)(?:\/(?:LK\s*)?([0-9]{1,2}[,.][0-9]|\d+))?\)$/i
   );
 
   if (!match) {
@@ -672,7 +672,7 @@ function getUniqueTimesNearY(
       items
         .filter(
           (item) =>
-            Math.abs(item.y - y) <= 4 &&
+            Math.abs(item.y - y) <= 7 &&
             /^\d{2}\.\d{2}\.\s+\d{2}:\d{2}$/.test(item.text)
         )
         .map((item) => item.text)

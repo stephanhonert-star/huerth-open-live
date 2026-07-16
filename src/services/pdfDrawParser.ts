@@ -1,5 +1,11 @@
 import * as pdfjsLib from "pdfjs-dist";
-import type { Draw, DrawMatch, DrawPlayer, DrawRound, DrawRoundName } from "../models/Draw";
+import type {
+  Draw,
+  DrawMatch,
+  DrawPlayer,
+  DrawRound,
+  DrawRoundName,
+} from "../models/Draw";
 import type { Match } from "../types";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
@@ -11,6 +17,13 @@ export type PdfDrawImportResult = {
   matches: Match[];
   debugText: string;
   playerCount: number;
+};
+
+type RawTextItem = {
+  text: string;
+  x: number;
+  y: number;
+  width: number;
 };
 
 type PositionedText = {
@@ -49,20 +62,52 @@ function slug(value: string) {
     .replace(/(^-|-$)/g, "");
 }
 
+function addExtra<T>(value: T, extra: Record<string, unknown>): T {
+  return {
+    ...(value as Record<string, unknown>),
+    ...extra,
+  } as T;
+}
+
+function createEmptyPlayer(name: string): DrawPlayer {
+  return { name };
+}
+
+function getMatchNr(roundIndex: number, matchIndex: number) {
+  return String(roundIndex * 100 + matchIndex);
+}
+
+function nextPowerOfTwo(value: number) {
+  let result = 2;
+
+  while (result < value) {
+    result *= 2;
+  }
+
+  return result;
+}
+
 function getCompetition(items: PositionedText[]) {
   const fullText = items.map((item) => item.text).join(" ");
+
   const match = fullText.match(
     /Bewerb:\s*(.+?)(?:\s+Hauptfeld|\s+Nebenrunde|$)/i
   );
 
-  if (!match) return "Unbekannte Konkurrenz";
+  if (!match) {
+    return "Unbekannte Konkurrenz";
+  }
 
   return clean(match[1].replace(/^Nebenrunde\s+/i, ""));
 }
 
 function getBracket(items: PositionedText[]) {
-  const text = items.map((item) => item.text).join(" ").toLowerCase();
-  return text.includes("nebenrunde") ? "nebenrunde" : "hauptfeld";
+  const fullText = items
+    .map((item) => item.text)
+    .join(" ")
+    .toLowerCase();
+
+  return fullText.includes("nebenrunde") ? "nebenrunde" : "hauptfeld";
 }
 
 function getCompetitionCode(
@@ -86,39 +131,6 @@ function getCompetitionCode(
   return bracket === "nebenrunde" ? `NR ${code}` : code;
 }
 
-function parseFullPlayer(text: string): DrawPlayer | null {
-  const value = clean(text);
-  const match = value.match(
-    /^(?:(\d+)\s+)?([^,]+),\s*([^()]+?)\s*\((\d+)(?:\/(?:LK\s*)?([0-9]{1,2}[,.][0-9]|\d+))?\)$/i
-  );
-
-  if (!match) return null;
-
-  return {
-    name: `${clean(match[2])} ${clean(match[3])}`,
-    seed: match[1] ? Number(match[1]) : undefined,
-    lk:
-      match[5] && match[5].includes(",")
-        ? match[5].replace(".", ",")
-        : undefined,
-  };
-}
-
-function createEmptyPlayer(name: string): DrawPlayer {
-  return { name };
-}
-
-function addExtra<T>(value: T, extra: Record<string, unknown>): T {
-  return {
-    ...(value as Record<string, unknown>),
-    ...extra,
-  } as T;
-}
-
-function getMatchNr(roundIndex: number, matchIndex: number) {
-  return String(roundIndex * 100 + matchIndex);
-}
-
 function isRoundHeader(text: string): text is DrawRoundName {
   return ROUND_NAMES.includes(text as DrawRoundName);
 }
@@ -129,56 +141,166 @@ function getRoundHeaders(items: PositionedText[]) {
     .sort((a, b) => a.x - b.x);
 }
 
+function parseFullPlayer(text: string): DrawPlayer | null {
+  const value = clean(text);
+
+  const match = value.match(
+    /^(?:(\d+)\s+)?([^,]+),\s*([^()]+?)\s*\((\d+)(?:\/(?:LK\s*)?([0-9]{1,2}[,.][0-9]|\d+))?\)$/i
+  );
+
+  if (!match) {
+    return null;
+  }
+
+  const rankingOrLk = match[5];
+
+  return {
+    name: `${clean(match[2])} ${clean(match[3])}`,
+    seed: match[1] ? Number(match[1]) : undefined,
+    lk:
+      rankingOrLk && /[,.]/.test(rankingOrLk)
+        ? rankingOrLk.replace(".", ",")
+        : undefined,
+  };
+}
+
+function mergeTextItems(rawItems: RawTextItem[]): PositionedText[] {
+  const yTolerance = 2.2;
+  const segmentGap = 18;
+
+  const rows: RawTextItem[][] = [];
+
+  const sorted = [...rawItems].sort((a, b) => {
+    if (Math.abs(a.y - b.y) > yTolerance) {
+      return b.y - a.y;
+    }
+
+    return a.x - b.x;
+  });
+
+  for (const item of sorted) {
+    let row = rows.find(
+      (candidate) =>
+        candidate.length > 0 &&
+        Math.abs(candidate[0].y - item.y) <= yTolerance
+    );
+
+    if (!row) {
+      row = [];
+      rows.push(row);
+    }
+
+    row.push(item);
+  }
+
+  const merged: PositionedText[] = [];
+
+  for (const row of rows) {
+    const rowItems = [...row].sort((a, b) => a.x - b.x);
+    let segment: RawTextItem[] = [];
+
+    function flushSegment() {
+      if (segment.length === 0) return;
+
+      const first = segment[0];
+      const text = clean(segment.map((item) => item.text).join(" "));
+
+      if (text) {
+        merged.push({
+          text,
+          x: first.x,
+          y: first.y,
+        });
+      }
+
+      segment = [];
+    }
+
+    for (const item of rowItems) {
+      if (segment.length === 0) {
+        segment.push(item);
+        continue;
+      }
+
+      const previous = segment[segment.length - 1];
+      const previousEnd = previous.x + previous.width;
+      const gap = item.x - previousEnd;
+
+      if (gap > segmentGap) {
+        flushSegment();
+      }
+
+      segment.push(item);
+    }
+
+    flushSegment();
+  }
+
+  return merged.sort((a, b) => {
+    if (Math.abs(a.y - b.y) > yTolerance) {
+      return b.y - a.y;
+    }
+
+    return a.x - b.x;
+  });
+}
+
 function getFirstRoundSlots(
   items: PositionedText[],
   firstColumnMaxX: number,
   headerY: number
 ): Slot[] {
-  return items
+  const candidates = items
     .filter(
       (item) =>
         item.y < headerY - 5 &&
         item.x < firstColumnMaxX &&
         (parseFullPlayer(item.text) !== null || item.text === "[Rast]")
     )
-    .sort((a, b) => b.y - a.y)
-    .map((item) => ({
-      player: item.text === "[Rast]" ? null : parseFullPlayer(item.text),
-      y: item.y,
-    }));
-}
+    .sort((a, b) => b.y - a.y);
 
-function nextPowerOfTwo(value: number) {
-  let result = 2;
-  while (result < value) result *= 2;
-  return result;
+  return candidates.map((item) => ({
+    player: item.text === "[Rast]" ? null : parseFullPlayer(item.text),
+    y: item.y,
+  }));
 }
 
 function padSlots(slots: Slot[]) {
   const fieldSize = nextPowerOfTwo(slots.length);
+
   while (slots.length < fieldSize) {
-    slots.push({ player: null, y: slots.at(-1)?.y ?? 0 });
+    slots.push({
+      player: null,
+      y: slots.length > 0 ? slots[slots.length - 1].y - 20 : 0,
+    });
   }
+
   return slots;
 }
 
-function getRoundNames(fieldSize: number, headers: PositionedText[]) {
-  const names = headers
+function getRoundNames(
+  fieldSize: number,
+  headers: PositionedText[]
+): DrawRoundName[] {
+  const found = headers
     .map((header) => header.text as DrawRoundName)
     .filter((name) => name !== "Sieger");
 
-  if (names.length > 0) return names;
+  if (found.length > 0) {
+    return found;
+  }
 
-  if (fieldSize <= 4) return ["Halbfinale", "Finale"] as DrawRoundName[];
-  if (fieldSize <= 8)
-    return ["Viertelfinale", "Halbfinale", "Finale"] as DrawRoundName[];
-  if (fieldSize <= 16)
-    return [
-      "Achtelfinale",
-      "Viertelfinale",
-      "Halbfinale",
-      "Finale",
-    ] as DrawRoundName[];
+  if (fieldSize <= 4) {
+    return ["Halbfinale", "Finale"];
+  }
+
+  if (fieldSize <= 8) {
+    return ["Viertelfinale", "Halbfinale", "Finale"];
+  }
+
+  if (fieldSize <= 16) {
+    return ["Achtelfinale", "Viertelfinale", "Halbfinale", "Finale"];
+  }
 
   return [
     "Runde 1",
@@ -186,7 +308,7 @@ function getRoundNames(fieldSize: number, headers: PositionedText[]) {
     "Viertelfinale",
     "Halbfinale",
     "Finale",
-  ] as DrawRoundName[];
+  ];
 }
 
 function getTimesByRound(
@@ -196,6 +318,7 @@ function getTimesByRound(
   headerY: number
 ) {
   const result = new Map<number, PositionedText[]>();
+
   const timeItems = items.filter(
     (item) =>
       item.y < headerY - 5 &&
@@ -208,41 +331,68 @@ function getTimesByRound(
 
     headers.forEach((header, index) => {
       const distance = Math.abs(item.x - header.x);
+
       if (distance < nearestDistance) {
         nearestDistance = distance;
         nearestHeaderIndex = index;
       }
     });
 
+    // In nuLiga steht die Zeit optisch in der Spalte rechts vom Match.
     const roundIndex = Math.max(0, nearestHeaderIndex - 1);
-    if (roundIndex >= roundNames.length) continue;
+
+    if (roundIndex >= roundNames.length) {
+      continue;
+    }
 
     const current = result.get(roundIndex) || [];
     current.push(item);
     result.set(roundIndex, current);
   }
 
-  result.forEach((times) => times.sort((a, b) => b.y - a.y));
+  result.forEach((times) => {
+    times.sort((a, b) => b.y - a.y);
+  });
+
   return result;
 }
 
 function placeholder(previousRound: DrawRoundName, index: number) {
-  if (previousRound === "Halbfinale") return `Sieger Halbfinale ${index}`;
-  if (previousRound === "Viertelfinale") return `Sieger Viertelfinale ${index}`;
-  if (previousRound === "Achtelfinale") return `Sieger Achtelfinale ${index}`;
-  if (previousRound === "Runde 2") return `Sieger Runde 2 ${index}`;
-  if (previousRound === "Runde 1") return `Sieger Runde 1 ${index}`;
+  if (previousRound === "Halbfinale") {
+    return `Sieger Halbfinale ${index}`;
+  }
+
+  if (previousRound === "Viertelfinale") {
+    return `Sieger Viertelfinale ${index}`;
+  }
+
+  if (previousRound === "Achtelfinale") {
+    return `Sieger Achtelfinale ${index}`;
+  }
+
+  if (previousRound === "Runde 2") {
+    return `Sieger Runde 2 ${index}`;
+  }
+
+  if (previousRound === "Runde 1") {
+    return `Sieger Runde 1 ${index}`;
+  }
+
   return `Sieger Match ${index}`;
 }
 
-function resolveAutoAdvance(match: DrawMatch | undefined) {
-  if (!match) return undefined;
+function resolveAutoAdvance(match: DrawMatch) {
+  const playerA = match.playerA?.name || "offen";
+  const playerB = match.playerB?.name || "offen";
 
-  const a = match.playerA?.name || "offen";
-  const b = match.playerB?.name || "offen";
+  if (playerA !== "offen" && playerB === "offen") {
+    return match.playerA;
+  }
 
-  if (a !== "offen" && b === "offen") return match.playerA;
-  if (a === "offen" && b !== "offen") return match.playerB;
+  if (playerA === "offen" && playerB !== "offen") {
+    return match.playerB;
+  }
+
   return undefined;
 }
 
@@ -257,11 +407,16 @@ function createRounds(
   const baseId = `${slug(competition)}-${bracket}`;
   const rounds: DrawRound[] = [];
   const fieldSize = slots.length;
+
   let previousMatches: DrawMatch[] = [];
 
   for (let roundIndex = 0; roundIndex < roundNames.length; roundIndex++) {
     const roundName = roundNames[roundIndex];
-    const matchCount = Math.max(1, fieldSize / Math.pow(2, roundIndex + 1));
+    const matchCount = Math.max(
+      1,
+      fieldSize / Math.pow(2, roundIndex + 1)
+    );
+
     const times = timesByRound.get(roundIndex) || [];
     const matches: DrawMatch[] = [];
 
@@ -273,7 +428,8 @@ function createRounds(
       let playerB: DrawPlayer;
 
       if (roundIndex === 0) {
-        playerA = slots[matchIndex * 2]?.player || createEmptyPlayer("offen");
+        playerA =
+          slots[matchIndex * 2]?.player || createEmptyPlayer("offen");
         playerB =
           slots[matchIndex * 2 + 1]?.player || createEmptyPlayer("offen");
       } else {
@@ -294,10 +450,14 @@ function createRounds(
       }
 
       const nextMatchIndex = Math.floor(matchIndex / 2) + 1;
+
       const nextMatchId =
         roundIndex === roundNames.length - 1
           ? `${baseId}-winner`
-          : `${baseId}-nr${getMatchNr(roundIndex + 2, nextMatchIndex)}`;
+          : `${baseId}-nr${getMatchNr(
+              roundIndex + 2,
+              nextMatchIndex
+            )}`;
 
       matches.push(
         addExtra(
@@ -316,12 +476,20 @@ function createRounds(
             nextMatchId,
             nextSlot: matchIndex % 2 === 0 ? "playerA" : "playerB",
           },
-          { nr, competitionCode }
+          {
+            nr,
+            competitionCode,
+          }
         )
       );
     }
 
-    rounds.push({ name: roundName, roundIndex: roundIndex + 1, matches });
+    rounds.push({
+      name: roundName,
+      roundIndex: roundIndex + 1,
+      matches,
+    });
+
     previousMatches = matches;
   }
 
@@ -385,17 +553,26 @@ async function getPageItems(
   const page = await pdf.getPage(pageNumber);
   const textContent = await page.getTextContent();
 
-  return textContent.items
+  const rawItems: RawTextItem[] = textContent.items
     .map((item) => {
-      if (!("str" in item) || !("transform" in item)) return null;
+      if (
+        !("str" in item) ||
+        !("transform" in item) ||
+        !("width" in item)
+      ) {
+        return null;
+      }
 
       return {
         text: clean(item.str),
         x: item.transform[4],
         y: item.transform[5],
+        width: Number(item.width) || 0,
       };
     })
-    .filter((item): item is PositionedText => Boolean(item?.text));
+    .filter((item): item is RawTextItem => Boolean(item?.text));
+
+  return mergeTextItems(rawItems);
 }
 
 function parsePage(items: PositionedText[]) {
@@ -405,19 +582,35 @@ function parsePage(items: PositionedText[]) {
   const headers = getRoundHeaders(items);
 
   if (headers.length < 2) {
-    throw new Error(`${competition}: Rundenspalten konnten nicht erkannt werden.`);
+    throw new Error(
+      `${competition}: Rundenspalten konnten nicht erkannt werden.`
+    );
   }
 
   const headerY = Math.max(...headers.map((header) => header.y));
   const firstColumnMaxX = (headers[0].x + headers[1].x) / 2;
-  const slots = padSlots(getFirstRoundSlots(items, firstColumnMaxX, headerY));
 
-  if (slots.length < 2) {
-    throw new Error(`${competition}: Spielerpositionen konnten nicht erkannt werden.`);
+  const rawSlots = getFirstRoundSlots(
+    items,
+    firstColumnMaxX,
+    headerY
+  );
+
+  if (rawSlots.length < 2) {
+    throw new Error(
+      `${competition}: Spielerpositionen konnten nicht erkannt werden.`
+    );
   }
 
+  const slots = padSlots(rawSlots);
   const roundNames = getRoundNames(slots.length, headers);
-  const timesByRound = getTimesByRound(items, headers, roundNames, headerY);
+  const timesByRound = getTimesByRound(
+    items,
+    headers,
+    roundNames,
+    headerY
+  );
+
   const rounds = createRounds(
     competition,
     competitionCode,
@@ -431,7 +624,9 @@ function parsePage(items: PositionedText[]) {
     id: `${slug(competition)}-${bracket}`,
     competition,
     bracket,
-    title: `${competition} ${bracket === "nebenrunde" ? "Nebenrunde" : "Hauptfeld"}`,
+    title: `${competition} ${
+      bracket === "nebenrunde" ? "Nebenrunde" : "Hauptfeld"
+    }`,
     rounds,
   };
 
@@ -445,14 +640,19 @@ export async function parseDrawFromPdf(
   file: File
 ): Promise<PdfDrawImportResult> {
   const buffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+  const loadingTask = pdfjsLib.getDocument({ data: buffer });
+  const pdf = await loadingTask.promise;
 
   const draws: Draw[] = [];
   const matches: Match[] = [];
   let debugText = "";
   let playerCount = 0;
 
-  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+  for (
+    let pageNumber = 1;
+    pageNumber <= pdf.numPages;
+    pageNumber++
+  ) {
     const items = await getPageItems(pdf, pageNumber);
 
     debugText += `\n\n--- SEITE ${pageNumber} ---\n`;
@@ -465,6 +665,7 @@ export async function parseDrawFromPdf(
 
     try {
       const result = parsePage(items);
+
       draws.push(result.draw);
       matches.push(...createMatchesFromDraw(result.draw));
       playerCount += result.playerCount;
@@ -474,7 +675,9 @@ export async function parseDrawFromPdf(
   }
 
   if (draws.length === 0) {
-    throw new Error("Keine Auslosung konnte aus der PDF gelesen werden.");
+    throw new Error(
+      "Keine Auslosung konnte aus der PDF gelesen werden."
+    );
   }
 
   return {

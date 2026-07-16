@@ -136,9 +136,27 @@ function isRoundHeader(text: string): text is DrawRoundName {
 }
 
 function getRoundHeaders(items: PositionedText[]) {
-  return items
-    .filter((item) => isRoundHeader(item.text))
-    .sort((a, b) => a.x - b.x);
+  const headers: PositionedText[] = [];
+
+  items.forEach((item) => {
+    ROUND_NAMES.forEach((roundName) => {
+      if (item.text === roundName) {
+        headers.push(item);
+      }
+    });
+  });
+
+  const unique = new Map<string, PositionedText>();
+
+  headers.forEach((header) => {
+    const existing = unique.get(header.text);
+
+    if (!existing || header.x < existing.x) {
+      unique.set(header.text, header);
+    }
+  });
+
+  return Array.from(unique.values()).sort((a, b) => a.x - b.x);
 }
 
 function parseFullPlayer(text: string): DrawPlayer | null {
@@ -575,7 +593,24 @@ async function getPageItems(
         Boolean(item?.text)
     );
 
-  return mergeTextItems(rawItems);
+  const mergedItems = mergeTextItems(rawItems);
+
+  const rawPositionedItems: PositionedText[] = rawItems.map((item) => ({
+    text: item.text,
+    x: item.x,
+    y: item.y,
+  }));
+
+  const combined = [...mergedItems, ...rawPositionedItems];
+  const seen = new Set<string>();
+
+  return combined.filter((item) => {
+    const key = `${item.text}|${item.x.toFixed(2)}|${item.y.toFixed(2)}`;
+
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 function parsePage(items: PositionedText[]) {
@@ -585,6 +620,14 @@ function parsePage(items: PositionedText[]) {
   const headers = getRoundHeaders(items);
 
   if (headers.length < 2) {
+    const pageText = items.map((item) => item.text).join(" ");
+
+    if (pageText.includes("Gruppen") || pageText.includes("Endrunde")) {
+      throw new Error(
+        `${competition}: Gruppenfeld wird separat verarbeitet.`
+      );
+    }
+
     throw new Error(
       `${competition}: Rundenspalten konnten nicht erkannt werden.`
     );

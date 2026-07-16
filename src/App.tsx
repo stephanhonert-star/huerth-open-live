@@ -224,6 +224,7 @@ function App() {
         {tab === "teilnehmer" && (
           <Players
             players={shownPlayers}
+            matches={matches}
             clubs={clubs}
             selectedClub={club}
             onSelectClub={setClub}

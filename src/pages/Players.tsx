@@ -1,8 +1,9 @@
 import { useState } from "react";
-import type { Player } from "../types";
+import type { Match, Player } from "../types";
 
 type PlayersProps = {
   players: Player[];
+  matches: Match[];
   clubs: string[];
   selectedClub: string;
   onSelectClub: (club: string) => void;
@@ -10,7 +11,47 @@ type PlayersProps = {
 
 type SortMode = "lk" | "name" | "club";
 
-function Players({ players, clubs, selectedClub, onSelectClub }: PlayersProps) {
+function isPlaceholder(name: string) {
+  return (
+    name.includes("Sieger") ||
+    name.includes("Finalist") ||
+    name.includes("Verlierer") ||
+    name.includes("Turniersieger") ||
+    name === "offen"
+  );
+}
+
+function getMatchSortValue(time: string) {
+  const match = time.match(
+    /^(\d{1,2})\.(\d{1,2})\.?\s+(\d{1,2}):(\d{2})/
+  );
+
+  if (!match) return Number.MAX_SAFE_INTEGER;
+
+  const [, day, month, hour, minute] = match;
+
+  return new Date(
+    2026,
+    Number(month) - 1,
+    Number(day),
+    Number(hour),
+    Number(minute)
+  ).getTime();
+}
+
+function getOpponent(match: Match, playerName: string) {
+  if (match.a === playerName) return match.b;
+  if (match.b === playerName) return match.a;
+  return "";
+}
+
+function Players({
+  players,
+  matches,
+  clubs,
+  selectedClub,
+  onSelectClub,
+}: PlayersProps) {
   const [search, setSearch] = useState("");
   const [competition, setCompetition] = useState("Alle");
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
@@ -31,7 +72,9 @@ function Players({ players, clubs, selectedClub, onSelectClub }: PlayersProps) {
 
   const competitions = [
     "Alle",
-    ...Array.from(new Set(players.map((player) => player.competition))).sort((a, b) => {
+    ...Array.from(
+      new Set(players.map((player) => player.competition))
+    ).sort((a, b) => {
       const ia = competitionOrder.indexOf(a);
       const ib = competitionOrder.indexOf(b);
 
@@ -45,7 +88,10 @@ function Players({ players, clubs, selectedClub, onSelectClub }: PlayersProps) {
 
   const getCompetitionCount = (item: string) => {
     if (item === "Alle") return players.length;
-    return players.filter((player) => player.competition === item).length;
+
+    return players.filter(
+      (player) => player.competition === item
+    ).length;
   };
 
   const filteredPlayers = players
@@ -54,8 +100,11 @@ function Players({ players, clubs, selectedClub, onSelectClub }: PlayersProps) {
         player.name.toLowerCase().includes(search.toLowerCase()) ||
         player.club.toLowerCase().includes(search.toLowerCase());
 
-      const matchesClub = selectedClub === "Alle" || player.club === selectedClub;
-      const matchesCompetition = competition === "Alle" || player.competition === competition;
+      const matchesClub =
+        selectedClub === "Alle" || player.club === selectedClub;
+
+      const matchesCompetition =
+        competition === "Alle" || player.competition === competition;
 
       return matchesSearch && matchesClub && matchesCompetition;
     })
@@ -74,11 +123,47 @@ function Players({ players, clubs, selectedClub, onSelectClub }: PlayersProps) {
       return lkA - lkB;
     });
 
-  const visibleCompetitions = competitions.filter((item) => item !== "Alle");
+  const visibleCompetitions = competitions.filter(
+    (item) => item !== "Alle"
+  );
 
   function shortCompetitionName(item: string) {
     return item.replace(" Einzel", "");
   }
+
+  function getPlayerMatches(player: Player) {
+    return matches
+      .filter(
+        (match) =>
+          !isPlaceholder(match.a) &&
+          !isPlaceholder(match.b) &&
+          (match.a === player.name || match.b === player.name)
+      )
+      .sort(
+        (a, b) =>
+          getMatchSortValue(a.time) - getMatchSortValue(b.time)
+      );
+  }
+
+  function getCurrentMatch(player: Player) {
+    return getPlayerMatches(player).find(
+      (match) => match.status === "live"
+    );
+  }
+
+  function getNextMatch(player: Player) {
+    return getPlayerMatches(player).find(
+      (match) => match.status === "planned"
+    );
+  }
+
+  const currentMatch = selectedPlayer
+    ? getCurrentMatch(selectedPlayer)
+    : undefined;
+
+  const nextMatch = selectedPlayer
+    ? getNextMatch(selectedPlayer)
+    : undefined;
 
   return (
     <>
@@ -99,7 +184,12 @@ function Players({ players, clubs, selectedClub, onSelectClub }: PlayersProps) {
         <div className="filterSelects">
           <label>
             Verein
-            <select value={selectedClub} onChange={(event) => onSelectClub(event.target.value)}>
+            <select
+              value={selectedClub}
+              onChange={(event) =>
+                onSelectClub(event.target.value)
+              }
+            >
               {clubs.map((club) => (
                 <option key={club} value={club}>
                   {club}
@@ -110,7 +200,12 @@ function Players({ players, clubs, selectedClub, onSelectClub }: PlayersProps) {
 
           <label>
             Sortierung
-            <select value={sortMode} onChange={(event) => setSortMode(event.target.value as SortMode)}>
+            <select
+              value={sortMode}
+              onChange={(event) =>
+                setSortMode(event.target.value as SortMode)
+              }
+            >
               <option value="lk">Beste LK zuerst</option>
               <option value="name">Name A-Z</option>
               <option value="club">Verein A-Z</option>
@@ -134,7 +229,8 @@ function Players({ players, clubs, selectedClub, onSelectClub }: PlayersProps) {
               className={competition === item ? "active" : ""}
               onClick={() => setCompetition(item)}
             >
-              {shortCompetitionName(item)} <span>{getCompetitionCount(item)}</span>
+              {shortCompetitionName(item)}{" "}
+              <span>{getCompetitionCount(item)}</span>
             </button>
           ))}
         </div>
@@ -168,9 +264,19 @@ function Players({ players, clubs, selectedClub, onSelectClub }: PlayersProps) {
       </section>
 
       {selectedPlayer && (
-        <div className="playerModalBackdrop" onClick={() => setSelectedPlayer(null)}>
-          <section className="playerModal" onClick={(event) => event.stopPropagation()}>
-            <button type="button" className="modalClose" onClick={() => setSelectedPlayer(null)}>
+        <div
+          className="playerModalBackdrop"
+          onClick={() => setSelectedPlayer(null)}
+        >
+          <section
+            className="playerModal"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="modalClose"
+              onClick={() => setSelectedPlayer(null)}
+            >
               ×
             </button>
 
@@ -190,6 +296,50 @@ function Players({ players, clubs, selectedClub, onSelectClub }: PlayersProps) {
               <span>🏆 LK {selectedPlayer.lk}</span>
               <span>🎂 Jahrgang {selectedPlayer.year}</span>
             </div>
+
+            {currentMatch && (
+              <div className="playerNextMatch playerMatchLive">
+                <small>🟢 SPIELT GERADE</small>
+                <h3>{currentMatch.time}</h3>
+                <p>
+                  Platz {currentMatch.court} ·{" "}
+                  {currentMatch.competition}
+                </p>
+                <strong>
+                  gegen{" "}
+                  {getOpponent(
+                    currentMatch,
+                    selectedPlayer.name
+                  )}
+                </strong>
+              </div>
+            )}
+
+            {!currentMatch && nextMatch && (
+              <div className="playerNextMatch">
+                <small>⏭️ NÄCHSTES SPIEL</small>
+                <h3>{nextMatch.time}</h3>
+                <p>
+                  Platz {nextMatch.court} ·{" "}
+                  {nextMatch.competition}
+                </p>
+                <strong>
+                  gegen{" "}
+                  {getOpponent(nextMatch, selectedPlayer.name)}
+                </strong>
+              </div>
+            )}
+
+            {!currentMatch && !nextMatch && (
+              <div className="playerNextMatch playerNoMatch">
+                <small>📅 NÄCHSTES SPIEL</small>
+                <h3>Noch nicht angesetzt</h3>
+                <p>
+                  Für diesen Spieler ist aktuell kein weiteres
+                  Match im Spielplan hinterlegt.
+                </p>
+              </div>
+            )}
           </section>
         </div>
       )}

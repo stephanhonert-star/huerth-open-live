@@ -479,7 +479,10 @@ function createRounds(
 
         // Die Zeit steht in nuLiga direkt neben dem zugehörigen Ast.
         // Mit 18 PDF-Punkten Toleranz werden benachbarte Matches nicht verwechselt.
-        if (nearestDistance <= 18) {
+        if (
+          nearestDistance <= 18 ||
+          (matchCount === 1 && availableTimes.length === 1)
+        ) {
           time = availableTimes[nearestIndex].text;
           availableTimes.splice(nearestIndex, 1);
         }
@@ -556,6 +559,109 @@ function createRounds(
   return rounds;
 }
 
+
+function normalizeShortName(value: string) {
+  return clean(value)
+    .toLowerCase()
+    .replace(/\s+/g, "")
+    .replace(/[.]/g, "");
+}
+
+function getShortPlayerName(player: DrawPlayer) {
+  const parts = clean(player.name).split(" ");
+  const lastName = parts[0] || "";
+  const firstName = parts.slice(1).join(" ");
+  const initial = firstName.charAt(0);
+
+  return normalizeShortName(`${lastName},${initial}`);
+}
+
+function applyPreDecidedMatches(
+  rounds: DrawRound[],
+  items: PositionedText[],
+  slots: Slot[],
+  firstColumnMaxX: number
+) {
+  const firstRound = rounds[0];
+
+  if (!firstRound) return;
+
+  const naItems = items.filter(
+    (item) => item.text.toLowerCase().replace(/\s+/g, "") === "n.a."
+  );
+
+  for (const naItem of naItems) {
+    let nearestMatchIndex = -1;
+    let nearestDistance = Number.POSITIVE_INFINITY;
+
+    firstRound.matches.forEach((match, matchIndex) => {
+      const yA = slots[matchIndex * 2]?.y ?? 0;
+      const yB = slots[matchIndex * 2 + 1]?.y ?? yA;
+      const matchY = (yA + yB) / 2;
+      const distance = Math.abs(matchY - naItem.y);
+
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearestMatchIndex = matchIndex;
+      }
+    });
+
+    if (nearestMatchIndex < 0 || nearestDistance > 30) continue;
+
+    const match = firstRound.matches[nearestMatchIndex];
+    const playerA = match.playerA;
+    const playerB = match.playerB;
+
+    if (!playerA || !playerB) continue;
+    if (playerA.name === "offen" || playerB.name === "offen") continue;
+
+    const nearbyTexts = items.filter(
+      (item) =>
+        item.x >= firstColumnMaxX &&
+        Math.abs(item.y - naItem.y) <= 30
+    );
+
+    const shortA = getShortPlayerName(playerA);
+    const shortB = getShortPlayerName(playerB);
+
+    const winner =
+      nearbyTexts.some(
+        (item) => normalizeShortName(item.text) === shortA
+      )
+        ? playerA
+        : nearbyTexts.some(
+            (item) => normalizeShortName(item.text) === shortB
+          )
+        ? playerB
+        : undefined;
+
+    if (!winner) continue;
+
+    const decidedMatch = addExtra(
+      {
+        ...match,
+        status: "done" as const,
+      },
+      {
+        result: "n.a.",
+      }
+    );
+
+    firstRound.matches[nearestMatchIndex] = decidedMatch;
+
+    const nextRound = rounds[1];
+    const nextMatch = nextRound?.matches[Math.floor(nearestMatchIndex / 2)];
+
+    if (!nextMatch) continue;
+
+    if (nearestMatchIndex % 2 === 0) {
+      nextMatch.playerA = winner;
+    } else {
+      nextMatch.playerB = winner;
+    }
+  }
+}
+
 function createMatchesFromDraw(draw: Draw): Match[] {
   return draw.rounds
     .flatMap((round) => round.matches)
@@ -580,9 +686,10 @@ function createMatchesFromDraw(draw: Draw): Match[] {
           competition: match.competition,
           a: match.playerA?.name || "offen",
           b: match.playerB?.name || "offen",
-          status: "planned",
+          status: match.status || "planned",
           since: "",
-          result: "",
+          result:
+            (match as unknown as { result?: string }).result || "",
         },
         {
           nr: (match as unknown as { nr?: string }).nr,
@@ -669,6 +776,13 @@ function parsePage(items: PositionedText[]) {
     slots,
     roundNames,
     timesByRound
+  );
+
+  applyPreDecidedMatches(
+    rounds,
+    items,
+    slots,
+    firstColumnMaxX
   );
 
   const draw: Draw = {

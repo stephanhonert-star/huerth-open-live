@@ -547,14 +547,14 @@ function createMatchesFromDraw(draw: Draw): Match[] {
 }
 
 async function getPageItems(
-  pdf: Awaited<ReturnType<typeof pdfjsLib.getDocument>>["promise"],
+  pdf: any,
   pageNumber: number
 ): Promise<PositionedText[]> {
   const page = await pdf.getPage(pageNumber);
   const textContent = await page.getTextContent();
 
   const rawItems: RawTextItem[] = textContent.items
-    .map((item) => {
+    .map((item: any) => {
       if (
         !("str" in item) ||
         !("transform" in item) ||
@@ -570,7 +570,10 @@ async function getPageItems(
         width: Number(item.width) || 0,
       };
     })
-    .filter((item): item is RawTextItem => Boolean(item?.text));
+    .filter(
+      (item: RawTextItem | null): item is RawTextItem =>
+        Boolean(item?.text)
+    );
 
   return mergeTextItems(rawItems);
 }

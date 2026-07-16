@@ -409,6 +409,7 @@ function createRounds(
   const fieldSize = slots.length;
 
   let previousMatches: DrawMatch[] = [];
+  let previousMatchY: number[] = [];
 
   for (let roundIndex = 0; roundIndex < roundNames.length; roundIndex++) {
     const roundName = roundNames[roundIndex];
@@ -417,8 +418,9 @@ function createRounds(
       fieldSize / Math.pow(2, roundIndex + 1)
     );
 
-    const times = timesByRound.get(roundIndex) || [];
+    const availableTimes = [...(timesByRound.get(roundIndex) || [])];
     const matches: DrawMatch[] = [];
+    const currentMatchY: number[] = [];
 
     for (let matchIndex = 0; matchIndex < matchCount; matchIndex++) {
       const nr = getMatchNr(roundIndex + 1, matchIndex + 1);
@@ -426,12 +428,17 @@ function createRounds(
 
       let playerA: DrawPlayer;
       let playerB: DrawPlayer;
+      let matchY: number;
 
       if (roundIndex === 0) {
         playerA =
           slots[matchIndex * 2]?.player || createEmptyPlayer("offen");
         playerB =
           slots[matchIndex * 2 + 1]?.player || createEmptyPlayer("offen");
+
+        const yA = slots[matchIndex * 2]?.y ?? 0;
+        const yB = slots[matchIndex * 2 + 1]?.y ?? yA;
+        matchY = (yA + yB) / 2;
       } else {
         const sourceA = previousMatches[matchIndex * 2];
         const sourceB = previousMatches[matchIndex * 2 + 1];
@@ -447,6 +454,35 @@ function createRounds(
           createEmptyPlayer(
             placeholder(roundNames[roundIndex - 1], matchIndex * 2 + 2)
           );
+
+        const yA = previousMatchY[matchIndex * 2] ?? 0;
+        const yB = previousMatchY[matchIndex * 2 + 1] ?? yA;
+        matchY = (yA + yB) / 2;
+      }
+
+      currentMatchY.push(matchY);
+
+      let time = "";
+
+      if (availableTimes.length > 0) {
+        let nearestIndex = 0;
+        let nearestDistance = Math.abs(availableTimes[0].y - matchY);
+
+        for (let index = 1; index < availableTimes.length; index++) {
+          const distance = Math.abs(availableTimes[index].y - matchY);
+
+          if (distance < nearestDistance) {
+            nearestDistance = distance;
+            nearestIndex = index;
+          }
+        }
+
+        // Die Zeit steht in nuLiga direkt neben dem zugehörigen Ast.
+        // Mit 18 PDF-Punkten Toleranz werden benachbarte Matches nicht verwechselt.
+        if (nearestDistance <= 18) {
+          time = availableTimes[nearestIndex].text;
+          availableTimes.splice(nearestIndex, 1);
+        }
       }
 
       const nextMatchIndex = Math.floor(matchIndex / 2) + 1;
@@ -472,7 +508,7 @@ function createRounds(
             playerB,
             status: "planned",
             court: 1,
-            time: times[matchIndex]?.text || "",
+            time,
             nextMatchId,
             nextSlot: matchIndex % 2 === 0 ? "playerA" : "playerB",
           },
@@ -491,6 +527,7 @@ function createRounds(
     });
 
     previousMatches = matches;
+    previousMatchY = currentMatchY;
   }
 
   rounds.push({
@@ -693,9 +730,7 @@ export async function parseDrawFromPdf(
       "Keine Auslosung konnte aus der PDF gelesen werden."
     );
   }
-console.log(debugText);
-
-return {
+  return {
   draw: draws[0],
   draws,
   matches,

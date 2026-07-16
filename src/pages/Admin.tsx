@@ -29,6 +29,25 @@ const ADMIN_PASSWORD = "huerth2026";
 const MATCH_STORAGE_KEY = "huerthOpenMatches";
 const PLAYER_STORAGE_KEY = "huerthOpenPlayers";
 
+const TOURNAMENT_DATES = [
+  "18.07.",
+  "19.07.",
+  "20.07.",
+  "21.07.",
+  "22.07.",
+  "23.07.",
+  "24.07.",
+  "25.07.",
+  "26.07.",
+  "27.07.",
+  "28.07.",
+  "29.07.",
+  "30.07.",
+  "31.07.",
+  "01.08.",
+  "02.08.",
+];
+
 function cleanForFirebase<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
@@ -275,6 +294,23 @@ function Admin() {
     });
   }
 
+  async function changeDate(match: Match, date: string) {
+    const clock = getTimePart(match.time).replace("Uhr", "").trim();
+    const nextTime =
+      date === "Ohne Datum"
+        ? clock
+        : `${date}${clock ? ` ${clock}` : ""}`;
+
+    updateDrawSchedule(match.drawMatchId, {
+      time: nextTime,
+    });
+
+    await updateMatch({
+      ...match,
+      time: nextTime,
+    });
+  }
+
   async function importDrawPdf(file: File) {
     setLoading(true);
     setImportMessage("Auslosung wird importiert...");
@@ -479,8 +515,8 @@ function Admin() {
   return (
     <div
       style={{
-        width: "min(1500px, calc(100vw - 32px))",
-        maxWidth: 1500,
+        width: "min(1180px, calc(100vw - 32px))",
+        maxWidth: 1180,
         margin: "0 auto",
         padding: "0 16px 40px",
       }}
@@ -566,7 +602,14 @@ function Admin() {
         </article>
       </section>
 
-      <section className="adminSection" style={{ maxWidth: 1500, margin: "0 auto" }}>
+      <section
+        className="adminSection"
+        style={{
+          width: "100%",
+          maxWidth: 1180,
+          margin: "0 auto",
+        }}
+      >
         <div className="adminSectionHeader" style={{ alignItems: "end" }}>
           <div>
             <p>🎾 LIVE & ERGEBNISSE</p>
@@ -615,9 +658,8 @@ function Admin() {
           className="adminMatchList"
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(6, minmax(210px, 1fr))",
-            gap: 10,
-            overflowX: "auto",
+            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+            gap: 14,
             alignItems: "start",
             paddingBottom: 12,
             width: "100%",
@@ -716,6 +758,23 @@ function Admin() {
 
                       {isEditing && (
                         <div className="adminEditGrid">
+                          <label className="adminCourtSelect">
+                            Datum ändern
+                            <select
+                              value={getDatePart(match.time)}
+                              onChange={(event) =>
+                                changeDate(match, event.target.value)
+                              }
+                            >
+                              <option value="Ohne Datum">Ohne Datum</option>
+                              {TOURNAMENT_DATES.map((date) => (
+                                <option key={date} value={date}>
+                                  {date}2026
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+
                           <label className="adminCourtSelect">
                             Platz ändern
                             <select

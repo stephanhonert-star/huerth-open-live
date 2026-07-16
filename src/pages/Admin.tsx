@@ -137,19 +137,28 @@ function createPlayersFromDraw(
 ): Player[] {
   const players: Player[] = [];
 
-  result.draw.rounds.forEach((round) => {
-    round.matches.forEach((match) => {
-      [match.playerA, match.playerB].forEach((drawPlayer) => {
-        if (!drawPlayer) return;
-        if (isPlaceholderName(drawPlayer.name)) return;
-        if (players.some((player) => player.name === drawPlayer.name)) return;
+  result.draws.forEach((draw) => {
+    draw.rounds.forEach((round) => {
+      round.matches.forEach((match) => {
+        [match.playerA, match.playerB].forEach((drawPlayer) => {
+          if (!drawPlayer) return;
+          if (isPlaceholderName(drawPlayer.name)) return;
 
-        players.push({
-          name: drawPlayer.name,
-          club: drawPlayer.club || "Unbekannter Verein",
-          lk: drawPlayer.lk || "-",
-          year: "-",
-          competition: result.draw.competition,
+          const exists = players.some(
+            (player) =>
+              player.name === drawPlayer.name &&
+              player.competition === draw.competition
+          );
+
+          if (exists) return;
+
+          players.push({
+            name: drawPlayer.name,
+            club: drawPlayer.club || "Unbekannter Verein",
+            lk: drawPlayer.lk || "-",
+            year: "-",
+            competition: draw.competition,
+          });
         });
       });
     });
@@ -274,15 +283,24 @@ function Admin() {
       const result = await parseDrawFromPdf(file);
       const importedPlayers = createPlayersFromDraw(result);
 
-      const existingDraws = loadDraws().filter((draw) => draw.id !== result.draw.id);
-      const existingMatches = matches.filter(
-        (match) => match.competition !== result.draw.competition
-      );
-      const existingPlayers = loadPlayers().filter(
-        (player) => player.competition !== result.draw.competition
+      const importedDrawIds = new Set(result.draws.map((draw) => draw.id));
+      const importedCompetitions = new Set(
+        result.draws.map((draw) => draw.competition)
       );
 
-      const nextDraws = [...existingDraws, result.draw];
+      const existingDraws = loadDraws().filter(
+        (draw) => !importedDrawIds.has(draw.id)
+      );
+
+      const existingMatches = matches.filter(
+        (match) => !importedCompetitions.has(match.competition)
+      );
+
+      const existingPlayers = loadPlayers().filter(
+        (player) => !importedCompetitions.has(player.competition)
+      );
+
+      const nextDraws = [...existingDraws, ...result.draws];
       const nextMatches = [...existingMatches, ...result.matches];
       const nextPlayers = [...existingPlayers, ...importedPlayers];
 
@@ -294,7 +312,7 @@ function Admin() {
       await publishLiveData(nextMatches, nextPlayers);
 
       setImportMessage(
-        `${result.draw.competition} importiert · ${importedPlayers.length} Spieler · ${result.matches.length} Spiele`
+        `${result.draws.length} Konkurrenzen importiert · ${importedPlayers.length} Spieler · ${result.matches.length} Spiele`
       );
     } catch (error) {
       console.error(error);

@@ -7,15 +7,32 @@ pdfjsLib.GlobalWorkerOptions.workerSrc =
 
 export type PdfDrawImportResult = {
   draw: Draw;
+  draws: Draw[];
   matches: Match[];
   debugText: string;
   playerCount: number;
 };
 
-type PlayerEntry = {
-  player: DrawPlayer;
-  lineIndex: number;
+type PositionedText = {
+  text: string;
+  x: number;
+  y: number;
 };
+
+type Slot = {
+  player: DrawPlayer | null;
+  y: number;
+};
+
+const ROUND_NAMES: DrawRoundName[] = [
+  "Runde 1",
+  "Runde 2",
+  "Achtelfinale",
+  "Viertelfinale",
+  "Halbfinale",
+  "Finale",
+  "Sieger",
+];
 
 function clean(value: string) {
   return value.replace(/\s+/g, " ").trim();
@@ -32,47 +49,27 @@ function slug(value: string) {
     .replace(/(^-|-$)/g, "");
 }
 
-function mapTestDate(date: string, useTestMapping: boolean) {
-  if (!useTestMapping) return date;
-
-  const mapping: Record<string, string> = {
-    "07.07.": "18.07.",
-    "08.07.": "19.07.",
-    "09.07.": "20.07.",
-    "10.07.": "21.07.",
-    "11.07.": "22.07.",
-    "12.07.": "23.07.",
-    "13.07.": "24.07.",
-    "14.07.": "25.07.",
-    "15.07.": "26.07.",
-    "16.07.": "27.07.",
-    "17.07.": "28.07.",
-    "18.07.": "29.07.",
-  };
-
-  return mapping[date] || date;
-}
-
-function getCompetition(lines: string[]) {
-  const fullText = lines.join(" ");
-  const match = fullText.match(/Bewerb:\s*(.+?)(?:\s+Hauptfeld|\s+Nebenrunde|$)/i);
+function getCompetition(items: PositionedText[]) {
+  const fullText = items.map((item) => item.text).join(" ");
+  const match = fullText.match(
+    /Bewerb:\s*(.+?)(?:\s+Hauptfeld|\s+Nebenrunde|$)/i
+  );
 
   if (!match) return "Unbekannte Konkurrenz";
 
   return clean(match[1].replace(/^Nebenrunde\s+/i, ""));
 }
 
-function getBracket(lines: string[]) {
-  const text = lines.join(" ").toLowerCase();
-
-  if (text.includes("nebenrunde")) return "nebenrunde";
-
-  return "hauptfeld";
+function getBracket(items: PositionedText[]) {
+  const text = items.map((item) => item.text).join(" ").toLowerCase();
+  return text.includes("nebenrunde") ? "nebenrunde" : "hauptfeld";
 }
 
-function getCompetitionCode(competition: string, bracket: "hauptfeld" | "nebenrunde") {
+function getCompetitionCode(
+  competition: string,
+  bracket: "hauptfeld" | "nebenrunde"
+) {
   const normalized = competition.toLowerCase();
-
   let code = "UNK";
 
   if (normalized.includes("herren 65")) code = "H65/E";
@@ -89,39 +86,10 @@ function getCompetitionCode(competition: string, bracket: "hauptfeld" | "nebenru
   return bracket === "nebenrunde" ? `NR ${code}` : code;
 }
 
-function isClubLine(line: string) {
-  return (
-    line.includes("TC ") ||
-    line.includes("TVM") ||
-    line.includes("Tennis") ||
-    line.includes("Club") ||
-    line.includes("Verein")
-  );
-}
-
-function normalizePlayerLine(line: string, nextLine?: string, nextNextLine?: string) {
-  let value = clean(line);
-
-  if (/^\d+$/.test(value) && nextLine && nextNextLine) {
-    value = `${value} ${clean(nextLine)} ${clean(nextNextLine)}`;
-  }
-
-  if (/^\d+\s+[A-ZÄÖÜ][^()]+$/.test(value) && nextLine?.startsWith("(")) {
-    value = `${value} ${nextLine}`;
-  }
-
-  if (/^[A-ZÄÖÜ][^()]+$/.test(value) && nextLine?.startsWith("(")) {
-    value = `${value} ${nextLine}`;
-  }
-
-  return value;
-}
-
-function parsePlayerLine(line: string, club?: string): DrawPlayer | null {
-  const value = clean(line).replace(/\s+\d{2}\.\d{2}\.\s+\d{2}:\d{2}$/, "");
-
+function parseFullPlayer(text: string): DrawPlayer | null {
+  const value = clean(text);
   const match = value.match(
-    /^(?:(\d+)\s+)?([^,]+),\s*([^()]+?)\s*\((\d+)(?:\/LK\s*([0-9]{1,2}[,.][0-9]))?\)$/i
+    /^(?:(\d+)\s+)?([^,]+),\s*([^()]+?)\s*\((\d+)(?:\/(?:LK\s*)?([0-9]{1,2}[,.][0-9]|\d+))?\)$/i
   );
 
   if (!match) return null;
@@ -129,102 +97,15 @@ function parsePlayerLine(line: string, club?: string): DrawPlayer | null {
   return {
     name: `${clean(match[2])} ${clean(match[3])}`,
     seed: match[1] ? Number(match[1]) : undefined,
-    lk: match[5] ? match[5].replace(".", ",") : undefined,
-    club: club && isClubLine(club) ? clean(club) : undefined,
+    lk:
+      match[5] && match[5].includes(",")
+        ? match[5].replace(".", ",")
+        : undefined,
   };
 }
 
-function getPlayerEntries(lines: string[]) {
-  const entries: PlayerEntry[] = [];
-
-  for (let i = 0; i < lines.length; i++) {
-    const merged = normalizePlayerLine(lines[i], lines[i + 1], lines[i + 2]);
-    const player = parsePlayerLine(merged, lines[i + 1]);
-
-    if (!player) continue;
-
-    if (!entries.some((entry) => entry.player.name === player.name)) {
-      entries.push({
-        player,
-        lineIndex: i,
-      });
-    }
-  }
-
-  return entries;
-}
-
-function getScheduleTimes(lines: string[]) {
-  const fullText = lines.join(" ");
-  const useTestMapping = fullText.includes("07.07.2021 bis 18.07.2021");
-  const times: string[] = [];
-
-  const matches = [...fullText.matchAll(/(\d{2}\.\d{2}\.)\s+(\d{2}:\d{2})/g)];
-
-  matches.forEach((match) => {
-    times.push(`${mapTestDate(match[1], useTestMapping)} ${match[2]}`);
-  });
-
-  return times;
-}
-
-function getRoundNamesFromPdf(lines: string[]): DrawRoundName[] {
-  const fullText = lines.join(" ");
-
-  const possibleRounds: DrawRoundName[] = [
-    "Runde 1",
-    "Runde 2",
-    "Achtelfinale",
-    "Viertelfinale",
-    "Halbfinale",
-    "Spiel um Platz 3",
-    "Finale",
-    "Sieger",
-  ];
-
-  const found = possibleRounds.filter((roundName) => fullText.includes(roundName));
-
-  if (found.includes("Achtelfinale") && found.includes("Viertelfinale")) {
-    return found;
-  }
-
-  return [];
-}
-
-function nextPowerOfTwo(value: number) {
-  let size = 2;
-
-  while (size < value) {
-    size *= 2;
-  }
-
-  return size;
-}
-
-function getFallbackRoundNames(fieldSize: number): DrawRoundName[] {
-  if (fieldSize <= 4) return ["Halbfinale", "Finale", "Sieger"];
-  if (fieldSize <= 8) return ["Viertelfinale", "Halbfinale", "Finale", "Sieger"];
-
-  if (fieldSize <= 16) {
-    return ["Achtelfinale", "Viertelfinale", "Halbfinale", "Finale", "Sieger"];
-  }
-
-  if (fieldSize <= 32) {
-    return ["Runde 1", "Achtelfinale", "Viertelfinale", "Halbfinale", "Finale", "Sieger"];
-  }
-
-  return ["Runde 1", "Runde 2", "Achtelfinale", "Viertelfinale", "Halbfinale", "Finale", "Sieger"];
-}
-
-function placeholder(roundName: DrawRoundName, index: number) {
-  if (roundName === "Finale") return `Finalist ${index}`;
-  if (roundName === "Halbfinale") return `Sieger Halbfinale ${index}`;
-  if (roundName === "Viertelfinale") return `Sieger Viertelfinale ${index}`;
-  if (roundName === "Achtelfinale") return `Sieger Achtelfinale ${index}`;
-  if (roundName === "Runde 2") return `Sieger Runde 2 ${index}`;
-  if (roundName === "Runde 1") return `Sieger Runde 1 ${index}`;
-
-  return `Sieger Match ${index}`;
+function createEmptyPlayer(name: string): DrawPlayer {
+  return { name };
 }
 
 function addExtra<T>(value: T, extra: Record<string, unknown>): T {
@@ -238,100 +119,185 @@ function getMatchNr(roundIndex: number, matchIndex: number) {
   return String(roundIndex * 100 + matchIndex);
 }
 
-function createEmptyPlayer(name: string): DrawPlayer {
-  return { name };
+function isRoundHeader(text: string): text is DrawRoundName {
+  return ROUND_NAMES.includes(text as DrawRoundName);
+}
+
+function getRoundHeaders(items: PositionedText[]) {
+  return items
+    .filter((item) => isRoundHeader(item.text))
+    .sort((a, b) => a.x - b.x);
+}
+
+function getFirstRoundSlots(
+  items: PositionedText[],
+  firstColumnMaxX: number,
+  headerY: number
+): Slot[] {
+  return items
+    .filter(
+      (item) =>
+        item.y < headerY - 5 &&
+        item.x < firstColumnMaxX &&
+        (parseFullPlayer(item.text) !== null || item.text === "[Rast]")
+    )
+    .sort((a, b) => b.y - a.y)
+    .map((item) => ({
+      player: item.text === "[Rast]" ? null : parseFullPlayer(item.text),
+      y: item.y,
+    }));
+}
+
+function nextPowerOfTwo(value: number) {
+  let result = 2;
+  while (result < value) result *= 2;
+  return result;
+}
+
+function padSlots(slots: Slot[]) {
+  const fieldSize = nextPowerOfTwo(slots.length);
+  while (slots.length < fieldSize) {
+    slots.push({ player: null, y: slots.at(-1)?.y ?? 0 });
+  }
+  return slots;
+}
+
+function getRoundNames(fieldSize: number, headers: PositionedText[]) {
+  const names = headers
+    .map((header) => header.text as DrawRoundName)
+    .filter((name) => name !== "Sieger");
+
+  if (names.length > 0) return names;
+
+  if (fieldSize <= 4) return ["Halbfinale", "Finale"] as DrawRoundName[];
+  if (fieldSize <= 8)
+    return ["Viertelfinale", "Halbfinale", "Finale"] as DrawRoundName[];
+  if (fieldSize <= 16)
+    return [
+      "Achtelfinale",
+      "Viertelfinale",
+      "Halbfinale",
+      "Finale",
+    ] as DrawRoundName[];
+
+  return [
+    "Runde 1",
+    "Achtelfinale",
+    "Viertelfinale",
+    "Halbfinale",
+    "Finale",
+  ] as DrawRoundName[];
+}
+
+function getTimesByRound(
+  items: PositionedText[],
+  headers: PositionedText[],
+  roundNames: DrawRoundName[],
+  headerY: number
+) {
+  const result = new Map<number, PositionedText[]>();
+  const timeItems = items.filter(
+    (item) =>
+      item.y < headerY - 5 &&
+      /^\d{2}\.\d{2}\.\s+\d{2}:\d{2}$/.test(item.text)
+  );
+
+  for (const item of timeItems) {
+    let nearestHeaderIndex = -1;
+    let nearestDistance = Number.POSITIVE_INFINITY;
+
+    headers.forEach((header, index) => {
+      const distance = Math.abs(item.x - header.x);
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearestHeaderIndex = index;
+      }
+    });
+
+    const roundIndex = Math.max(0, nearestHeaderIndex - 1);
+    if (roundIndex >= roundNames.length) continue;
+
+    const current = result.get(roundIndex) || [];
+    current.push(item);
+    result.set(roundIndex, current);
+  }
+
+  result.forEach((times) => times.sort((a, b) => b.y - a.y));
+  return result;
+}
+
+function placeholder(previousRound: DrawRoundName, index: number) {
+  if (previousRound === "Halbfinale") return `Sieger Halbfinale ${index}`;
+  if (previousRound === "Viertelfinale") return `Sieger Viertelfinale ${index}`;
+  if (previousRound === "Achtelfinale") return `Sieger Achtelfinale ${index}`;
+  if (previousRound === "Runde 2") return `Sieger Runde 2 ${index}`;
+  if (previousRound === "Runde 1") return `Sieger Runde 1 ${index}`;
+  return `Sieger Match ${index}`;
+}
+
+function resolveAutoAdvance(match: DrawMatch | undefined) {
+  if (!match) return undefined;
+
+  const a = match.playerA?.name || "offen";
+  const b = match.playerB?.name || "offen";
+
+  if (a !== "offen" && b === "offen") return match.playerA;
+  if (a === "offen" && b !== "offen") return match.playerB;
+  return undefined;
 }
 
 function createRounds(
   competition: string,
   competitionCode: string,
   bracket: "hauptfeld" | "nebenrunde",
-  players: DrawPlayer[],
-  scheduleTimes: string[],
-  pdfRoundNames: DrawRoundName[]
+  slots: Slot[],
+  roundNames: DrawRoundName[],
+  timesByRound: Map<number, PositionedText[]>
 ): DrawRound[] {
-  const fieldSize = nextPowerOfTwo(players.length);
-  const roundNames =
-    pdfRoundNames.length > 0 ? pdfRoundNames : getFallbackRoundNames(fieldSize);
-
   const baseId = `${slug(competition)}-${bracket}`;
   const rounds: DrawRound[] = [];
-
-  let previousRoundMatchCount = 0;
-  let scheduleIndex = 0;
+  const fieldSize = slots.length;
+  let previousMatches: DrawMatch[] = [];
 
   for (let roundIndex = 0; roundIndex < roundNames.length; roundIndex++) {
     const roundName = roundNames[roundIndex];
+    const matchCount = Math.max(1, fieldSize / Math.pow(2, roundIndex + 1));
+    const times = timesByRound.get(roundIndex) || [];
     const matches: DrawMatch[] = [];
-
-    if (roundName === "Sieger") {
-      matches.push(
-        addExtra(
-          {
-            id: `${baseId}-winner`,
-            competition,
-            bracket,
-            round: "Sieger",
-            roundIndex: roundIndex + 1,
-            matchIndex: 1,
-            playerA: createEmptyPlayer("Turniersieger"),
-            status: "planned",
-          },
-          {
-            nr: getMatchNr(roundIndex + 1, 1),
-            competitionCode,
-          }
-        )
-      );
-
-      rounds.push({
-        name: roundName,
-        roundIndex: roundIndex + 1,
-        matches,
-      });
-
-      continue;
-    }
-
-    const remainingNormalRounds = roundNames
-      .slice(roundIndex)
-      .filter((name) => name !== "Sieger" && name !== "Spiel um Platz 3").length;
-
-    let matchCount = Math.pow(2, remainingNormalRounds - 1);
-
-    if (roundIndex > 0 && previousRoundMatchCount > 0) {
-      matchCount = Math.max(1, Math.ceil(previousRoundMatchCount / 2));
-    }
-
-    if (roundName === "Finale") {
-      matchCount = 1;
-    }
-
-    if (roundName === "Spiel um Platz 3") {
-      matchCount = 1;
-    }
 
     for (let matchIndex = 0; matchIndex < matchCount; matchIndex++) {
       const nr = getMatchNr(roundIndex + 1, matchIndex + 1);
       const id = `${baseId}-nr${nr}`;
-      const nextRoundName = roundNames[roundIndex + 1];
-      const nextMatchIndex = Math.floor(matchIndex / 2) + 1;
 
-      let nextMatchId = `${baseId}-nr${getMatchNr(roundIndex + 2, nextMatchIndex)}`;
+      let playerA: DrawPlayer;
+      let playerB: DrawPlayer;
 
-      if (nextRoundName === "Sieger") {
-        nextMatchId = `${baseId}-winner`;
+      if (roundIndex === 0) {
+        playerA = slots[matchIndex * 2]?.player || createEmptyPlayer("offen");
+        playerB =
+          slots[matchIndex * 2 + 1]?.player || createEmptyPlayer("offen");
+      } else {
+        const sourceA = previousMatches[matchIndex * 2];
+        const sourceB = previousMatches[matchIndex * 2 + 1];
+
+        playerA =
+          resolveAutoAdvance(sourceA) ||
+          createEmptyPlayer(
+            placeholder(roundNames[roundIndex - 1], matchIndex * 2 + 1)
+          );
+
+        playerB =
+          resolveAutoAdvance(sourceB) ||
+          createEmptyPlayer(
+            placeholder(roundNames[roundIndex - 1], matchIndex * 2 + 2)
+          );
       }
 
-      const playerA =
-        roundIndex === 0
-          ? players[matchIndex * 2] || createEmptyPlayer("offen")
-          : createEmptyPlayer(placeholder(roundNames[roundIndex - 1], matchIndex * 2 + 1));
-
-      const playerB =
-        roundIndex === 0
-          ? players[matchIndex * 2 + 1] || createEmptyPlayer("offen")
-          : createEmptyPlayer(placeholder(roundNames[roundIndex - 1], matchIndex * 2 + 2));
+      const nextMatchIndex = Math.floor(matchIndex / 2) + 1;
+      const nextMatchId =
+        roundIndex === roundNames.length - 1
+          ? `${baseId}-winner`
+          : `${baseId}-nr${getMatchNr(roundIndex + 2, nextMatchIndex)}`;
 
       matches.push(
         addExtra(
@@ -346,28 +312,41 @@ function createRounds(
             playerB,
             status: "planned",
             court: 1,
-            time: scheduleTimes[scheduleIndex] || "",
+            time: times[matchIndex]?.text || "",
             nextMatchId,
             nextSlot: matchIndex % 2 === 0 ? "playerA" : "playerB",
           },
-          {
-            nr,
-            competitionCode,
-          }
+          { nr, competitionCode }
         )
       );
-
-      scheduleIndex++;
     }
 
-    rounds.push({
-      name: roundName,
-      roundIndex: roundIndex + 1,
-      matches,
-    });
-
-    previousRoundMatchCount = matchCount;
+    rounds.push({ name: roundName, roundIndex: roundIndex + 1, matches });
+    previousMatches = matches;
   }
+
+  rounds.push({
+    name: "Sieger",
+    roundIndex: roundNames.length + 1,
+    matches: [
+      addExtra(
+        {
+          id: `${baseId}-winner`,
+          competition,
+          bracket,
+          round: "Sieger",
+          roundIndex: roundNames.length + 1,
+          matchIndex: 1,
+          playerA: createEmptyPlayer("Turniersieger"),
+          status: "planned",
+        },
+        {
+          nr: getMatchNr(roundNames.length + 1, 1),
+          competitionCode,
+        }
+      ),
+    ],
+  });
 
   return rounds;
 }
@@ -391,46 +370,61 @@ function createMatchesFromDraw(draw: Draw): Match[] {
         },
         {
           nr: (match as unknown as { nr?: string }).nr,
-          competitionCode: (match as unknown as { competitionCode?: string }).competitionCode,
+          competitionCode: (
+            match as unknown as { competitionCode?: string }
+          ).competitionCode,
         }
       )
     );
 }
 
-export async function parseDrawFromPdf(file: File): Promise<PdfDrawImportResult> {
-  const buffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+async function getPageItems(
+  pdf: Awaited<ReturnType<typeof pdfjsLib.getDocument>>["promise"],
+  pageNumber: number
+): Promise<PositionedText[]> {
+  const page = await pdf.getPage(pageNumber);
+  const textContent = await page.getTextContent();
 
-  let debugText = "";
-  const allLines: string[] = [];
+  return textContent.items
+    .map((item) => {
+      if (!("str" in item) || !("transform" in item)) return null;
 
-  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
-    const page = await pdf.getPage(pageNumber);
-    const textContent = await page.getTextContent();
+      return {
+        text: clean(item.str),
+        x: item.transform[4],
+        y: item.transform[5],
+      };
+    })
+    .filter((item): item is PositionedText => Boolean(item?.text));
+}
 
-    const lines = textContent.items
-      .map((item) => ("str" in item ? clean(item.str) : ""))
-      .filter(Boolean);
+function parsePage(items: PositionedText[]) {
+  const competition = getCompetition(items);
+  const bracket = getBracket(items);
+  const competitionCode = getCompetitionCode(competition, bracket);
+  const headers = getRoundHeaders(items);
 
-    allLines.push(...lines);
-    debugText += `\n\n--- SEITE ${pageNumber} ---\n${lines.join("\n")}`;
+  if (headers.length < 2) {
+    throw new Error(`${competition}: Rundenspalten konnten nicht erkannt werden.`);
   }
 
-  const competition = getCompetition(allLines);
-  const bracket = getBracket(allLines);
-  const competitionCode = getCompetitionCode(competition, bracket);
-  const entries = getPlayerEntries(allLines);
-  const players = entries.map((entry) => entry.player);
-  const scheduleTimes = getScheduleTimes(allLines);
-  const pdfRoundNames = getRoundNamesFromPdf(allLines);
+  const headerY = Math.max(...headers.map((header) => header.y));
+  const firstColumnMaxX = (headers[0].x + headers[1].x) / 2;
+  const slots = padSlots(getFirstRoundSlots(items, firstColumnMaxX, headerY));
 
+  if (slots.length < 2) {
+    throw new Error(`${competition}: Spielerpositionen konnten nicht erkannt werden.`);
+  }
+
+  const roundNames = getRoundNames(slots.length, headers);
+  const timesByRound = getTimesByRound(items, headers, roundNames, headerY);
   const rounds = createRounds(
     competition,
     competitionCode,
     bracket,
-    players,
-    scheduleTimes,
-    pdfRoundNames
+    slots,
+    roundNames,
+    timesByRound
   );
 
   const draw: Draw = {
@@ -443,8 +437,51 @@ export async function parseDrawFromPdf(file: File): Promise<PdfDrawImportResult>
 
   return {
     draw,
-    matches: createMatchesFromDraw(draw),
+    playerCount: slots.filter((slot) => slot.player !== null).length,
+  };
+}
+
+export async function parseDrawFromPdf(
+  file: File
+): Promise<PdfDrawImportResult> {
+  const buffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+
+  const draws: Draw[] = [];
+  const matches: Match[] = [];
+  let debugText = "";
+  let playerCount = 0;
+
+  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+    const items = await getPageItems(pdf, pageNumber);
+
+    debugText += `\n\n--- SEITE ${pageNumber} ---\n`;
+    debugText += items
+      .map(
+        (item) =>
+          `${item.text} | x=${item.x.toFixed(1)} | y=${item.y.toFixed(1)}`
+      )
+      .join("\n");
+
+    try {
+      const result = parsePage(items);
+      draws.push(result.draw);
+      matches.push(...createMatchesFromDraw(result.draw));
+      playerCount += result.playerCount;
+    } catch (error) {
+      console.warn(`Seite ${pageNumber} wurde übersprungen`, error);
+    }
+  }
+
+  if (draws.length === 0) {
+    throw new Error("Keine Auslosung konnte aus der PDF gelesen werden.");
+  }
+
+  return {
+    draw: draws[0],
+    draws,
+    matches,
     debugText,
-    playerCount: players.length,
+    playerCount,
   };
 }

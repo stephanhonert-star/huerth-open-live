@@ -693,12 +693,12 @@ export async function parseDrawFromPdf(
       "Keine Auslosung konnte aus der PDF gelesen werden."
     );
   }
+console.log(debugText);
 
-  return {
-    draw: draws[0],
-    draws,
-    matches,
-    debugText,
-    playerCount,
-  };
-}
+return {
+  draw: draws[0],
+  draws,
+  matches,
+  debugText,
+  playerCount,
+};

@@ -46,11 +46,14 @@ function cleanClub(value: string) {
   );
 }
 
-function parsePlayersFromPageText(pageText: string, competition: string): Player[] {
+function parsePlayersFromPageText(
+  pageText: string,
+  competition: string
+): Player[] {
   const players: Player[] = [];
 
   const playerRegex =
-    /(?:^|\s)\d+\s+(?:\d+\s+)?([\p{L}][\p{L}\-'. ]+?),\s*([\p{L}][\p{L}\-'. ]+?)\s+((?:19|20)\d{2})\s+LK\s*([0-9]{1,2}[,.][0-9])\s+LK\s*[0-9]{1,2}[,.][0-9]\s+(?:[A-Z]\d{2}\/\d+|-)\s+(\d{8})\s+(.+?)(?=\s+\d+\s+(?:\d+\s+)?[\p{L}][\p{L}\-'. ]+?,\s*[\p{L}]|\s+Nachrücker|\s+nu\s+\.Dokument|$)/gu;
+    /(?:^|\s)\d+\s+(?:\d+\s+)?([\p{L}][\p{L}\-'. ]+?),\s*([\p{L}][\p{L}\-'. ]+?)\s+((?:19|20)\d{2})\s+LK\s*([0-9]{1,2}[,.][0-9])\s+LK\s*[0-9]{1,2}[,.][0-9]\s+(?:[A-Z]\d{2}\/\d+|\d+|-)\s+(\d{8})\s+(.+?)(?=\s+\d+\s+(?:\d+\s+)?[\p{L}][\p{L}\-'. ]+?,\s*[\p{L}]|\s+Nachrücker|\s+nu\s+\.Dokument|$)/gu;
 
   const matches = [...pageText.matchAll(playerRegex)];
 
@@ -73,7 +76,9 @@ function parsePlayersFromPageText(pageText: string, competition: string): Player
   return players;
 }
 
-export async function parsePlayersFromPdf(file: File): Promise<PdfImportResult> {
+export async function parsePlayersFromPdf(
+  file: File
+): Promise<PdfImportResult> {
   const buffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
 
@@ -94,7 +99,10 @@ export async function parsePlayersFromPdf(file: File): Promise<PdfImportResult> 
 
     debugText += `\n\n--- SEITE ${pageNumber} ---\n${pageText}`;
     debugText += `\n\n--- GEFUNDENE SPIELER SEITE ${pageNumber} ---\n${pagePlayers
-      .map((player) => `${player.name} | ${player.year} | ${player.lk} | ${player.club} | ${player.competition}`)
+      .map(
+        (player) =>
+          `${player.name} | ${player.year} | ${player.lk} | ${player.club} | ${player.competition}`
+      )
       .join("\n")}`;
 
     pagePlayers.forEach((player) => {

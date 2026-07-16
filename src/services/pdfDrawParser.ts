@@ -131,29 +131,14 @@ function getCompetitionCode(
   return bracket === "nebenrunde" ? `NR ${code}` : code;
 }
 
+function isRoundHeader(text: string): text is DrawRoundName {
+  return ROUND_NAMES.includes(text as DrawRoundName);
+}
 
 function getRoundHeaders(items: PositionedText[]) {
-  const headers: PositionedText[] = [];
-
-  items.forEach((item) => {
-    ROUND_NAMES.forEach((roundName) => {
-      if (item.text === roundName) {
-        headers.push(item);
-      }
-    });
-  });
-
-  const unique = new Map<string, PositionedText>();
-
-  headers.forEach((header) => {
-    const existing = unique.get(header.text);
-
-    if (!existing || header.x < existing.x) {
-      unique.set(header.text, header);
-    }
-  });
-
-  return Array.from(unique.values()).sort((a, b) => a.x - b.x);
+  return items
+    .filter((item) => isRoundHeader(item.text))
+    .sort((a, b) => a.x - b.x);
 }
 
 function parseFullPlayer(text: string): DrawPlayer | null {
@@ -538,6 +523,17 @@ function createMatchesFromDraw(draw: Draw): Match[] {
   return draw.rounds
     .flatMap((round) => round.matches)
     .filter((match) => match.round !== "Sieger")
+    .filter((match) => {
+      const playerA = match.playerA?.name || "offen";
+      const playerB = match.playerB?.name || "offen";
+
+      const playerAIsOpen = playerA === "offen";
+      const playerBIsOpen = playerB === "offen";
+
+      // Freilose bleiben im Turnierbaum erhalten, erscheinen aber nicht
+      // als echte Spiele im Spielplan oder in der Admin-Spielsteuerung.
+      return !playerAIsOpen && !playerBIsOpen;
+    })
     .map((match) =>
       addExtra(
         {
@@ -590,24 +586,7 @@ async function getPageItems(
         Boolean(item?.text)
     );
 
-  const mergedItems = mergeTextItems(rawItems);
-
-  const rawPositionedItems: PositionedText[] = rawItems.map((item) => ({
-    text: item.text,
-    x: item.x,
-    y: item.y,
-  }));
-
-  const combined = [...mergedItems, ...rawPositionedItems];
-  const seen = new Set<string>();
-
-  return combined.filter((item) => {
-    const key = `${item.text}|${item.x.toFixed(2)}|${item.y.toFixed(2)}`;
-
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+  return mergeTextItems(rawItems);
 }
 
 function parsePage(items: PositionedText[]) {
@@ -617,14 +596,6 @@ function parsePage(items: PositionedText[]) {
   const headers = getRoundHeaders(items);
 
   if (headers.length < 2) {
-    const pageText = items.map((item) => item.text).join(" ");
-
-    if (pageText.includes("Gruppen") || pageText.includes("Endrunde")) {
-      throw new Error(
-        `${competition}: Gruppenfeld wird separat verarbeitet.`
-      );
-    }
-
     throw new Error(
       `${competition}: Rundenspalten konnten nicht erkannt werden.`
     );

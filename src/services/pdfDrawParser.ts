@@ -594,7 +594,7 @@ function applyPreDecidedMatches(
     let nearestMatchIndex = -1;
     let nearestDistance = Number.POSITIVE_INFINITY;
 
-    firstRound.matches.forEach((_, matchIndex) => {
+    firstRound.matches.forEach((match, matchIndex) => {
       const yA = slots[matchIndex * 2]?.y ?? 0;
       const yB = slots[matchIndex * 2 + 1]?.y ?? yA;
       const matchY = (yA + yB) / 2;
@@ -784,6 +784,23 @@ function parsePage(items: PositionedText[]) {
     slots,
     firstColumnMaxX
   );
+
+  const FINAL_TIMES: Record<string, string> = {
+    "Herren 40 Einzel": "02.08. 14:00",
+    "Herren 50 Einzel": "02.08. 15:30",
+    "Herren 55 Einzel": "02.08. 17:00",
+    "Herren 65 Einzel": "02.08. 18:30",
+  };
+
+  const finalRound = rounds.find((round) => round.name === "Finale");
+
+  if (finalRound?.matches.length === 1) {
+    const finalMatch = finalRound.matches[0];
+
+    if (!finalMatch.time && FINAL_TIMES[competition]) {
+      finalMatch.time = FINAL_TIMES[competition];
+    }
+  }
 
   const draw: Draw = {
     id: `${slug(competition)}-${bracket}`,

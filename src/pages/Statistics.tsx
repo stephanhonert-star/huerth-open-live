@@ -1,11 +1,16 @@
 import { useMemo } from "react";
-import { tournamentStore } from "../store/tournamentStore";
 import type { Match, Player } from "../types";
+import "../styles/statistics.css";
 
 type StatisticsProps = {
   players: Player[];
   matches: Match[];
 };
+
+const COMPETITION_COUNT = 10;
+const GERMAN_RANKING_PLAYERS = 14;
+const FARTHEST_CLUB = "TC Unna 1902 Grün-Weiß";
+const FARTHEST_DISTANCE_KM = 110;
 
 function parseYear(value: string) {
   const match = value.match(/\b(19|20)\d{2}\b/);
@@ -24,31 +29,21 @@ function formatLk(value: number | null) {
   return value.toFixed(1).replace(".", ",");
 }
 
-function isRankingPlayer(player: Player) {
-  const ranking = player.ranking?.trim().toLowerCase();
-
-  return Boolean(
-    ranking &&
-      ranking !== "0" &&
-      ranking !== "-" &&
-      ranking !== "keine"
-  );
+function normalizeName(value: string) {
+  return value.toLowerCase().replace(/\s+/g, " ").trim();
 }
 
-function normalizeName(name: string) {
-  return name.toLowerCase().replace(/\s+/g, " ").trim();
-}
-
-function isPlaceholder(name: string) {
-  const normalized = normalizeName(name);
+function isPlaceholder(value: string) {
+  const name = normalizeName(value);
 
   return (
-    normalized === "" ||
-    normalized === "offen" ||
-    normalized.includes("sieger") ||
-    normalized.includes("verlierer") ||
-    normalized.includes("finalist") ||
-    normalized.includes("turniersieger")
+    !name ||
+    name === "offen" ||
+    name.includes("sieger") ||
+    name.includes("verlierer") ||
+    name.includes("finalist") ||
+    name.includes("turniersieger") ||
+    name.includes("freilos")
   );
 }
 
@@ -56,315 +51,161 @@ function isRealMatch(match: Match) {
   return !isPlaceholder(match.a) && !isPlaceholder(match.b);
 }
 
+function cleanClubName(club: string) {
+  return club
+    .replace(/\s*\([^)]*\)\s*$/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function Statistics({ players, matches }: StatisticsProps) {
-  const statistics = useMemo(() => {
-    const validPlayers = players.filter((player) => player.name.trim() !== "");
+  const stats = useMemo(() => {
+    const validPlayers = players.filter((player) => player.name.trim());
 
     const clubCounts = new Map<string, number>();
 
     validPlayers.forEach((player) => {
-      const club = player.club.trim();
+      const club = cleanClubName(player.club);
 
       if (!club) return;
 
       clubCounts.set(club, (clubCounts.get(club) ?? 0) + 1);
     });
 
-    const sortedClubs = Array.from(clubCounts.entries()).sort(
-      (a, b) => b[1] - a[1]
-    );
-
-    const topClub = sortedClubs[0] ?? null;
+    const sortedClubs = Array.from(clubCounts.entries()).sort((a, b) => {
+      if (b[1] !== a[1]) return b[1] - a[1];
+      return a[0].localeCompare(b[0], "de");
+    });
 
     const years = validPlayers
       .map((player) => parseYear(player.year))
       .filter((year): year is number => year !== null);
 
-    const youngestYear = years.length > 0 ? Math.max(...years) : null;
-    const oldestYear = years.length > 0 ? Math.min(...years) : null;
-    const currentYear = new Date().getFullYear();
-
     const lkValues = validPlayers
       .map((player) => parseLk(player.lk))
       .filter((lk): lk is number => lk !== null);
 
-    const bestLk = lkValues.length > 0 ? Math.min(...lkValues) : null;
-    const worstLk = lkValues.length > 0 ? Math.max(...lkValues) : null;
+    const currentYear = new Date().getFullYear();
+    const youngestYear = years.length ? Math.max(...years) : null;
+    const oldestYear = years.length ? Math.min(...years) : null;
 
-    const rankingPlayers = validPlayers.filter(isRankingPlayer).length;
-
-    const farthestPlayer = [...validPlayers]
-      .filter(
-        (player) =>
-          typeof player.distanceKm === "number" &&
-          Number.isFinite(player.distanceKm)
-      )
-      .sort((a, b) => (b.distanceKm ?? 0) - (a.distanceKm ?? 0))[0];
-
-    const realImportedMatches = matches.filter(isRealMatch).length;
-    const competitionCount = tournamentStore.tournament.competitions;
-
-    const estimatedMatches = Math.max(
-      realImportedMatches,
-      Math.round(Math.max(0, validPlayers.length - competitionCount) * 1.5)
+    const importedMatchCount = matches.filter(isRealMatch).length;
+    const estimatedMatchCount = Math.round(
+      Math.max(0, validPlayers.length - COMPETITION_COUNT) * 1.5
     );
 
     return {
       participants: validPlayers.length,
-      competitions: competitionCount,
       clubs: sortedClubs.length,
-      topClub,
+      matches: Math.max(importedMatchCount, estimatedMatchCount),
+      bestLk: lkValues.length ? Math.min(...lkValues) : null,
+      worstLk: lkValues.length ? Math.max(...lkValues) : null,
       youngestYear,
       youngestAge:
         youngestYear === null ? null : Math.max(0, currentYear - youngestYear),
       oldestYear,
       oldestAge:
         oldestYear === null ? null : Math.max(0, currentYear - oldestYear),
-      bestLk,
-      worstLk,
-      rankingPlayers,
-      farthestClub: farthestPlayer?.club ?? "",
-      farthestDistance: farthestPlayer?.distanceKm ?? null,
-      matches: estimatedMatches,
+      topClub: sortedClubs[0] ?? null,
     };
   }, [players, matches]);
 
-  const mainStats = [
-    {
-      icon: "👥",
-      value: statistics.participants,
-      label: "Teilnehmer",
-    },
-    {
-      icon: "🏛️",
-      value: statistics.clubs,
-      label: "Vereine",
-    },
-    {
-      icon: "🎾",
-      value: statistics.matches,
-      label: "Spiele",
-    },
-    {
-      icon: "⭐",
-      value: statistics.rankingPlayers,
-      label: "Deutsche Rangliste",
-    },
-  ];
-
-  const detailStats = [
-    {
-      icon: "🏆",
-      value: statistics.competitions,
-      label: "Konkurrenzen",
-    },
-    {
-      icon: "🥇",
-      value: formatLk(statistics.bestLk),
-      label: "Beste LK",
-    },
-    {
-      icon: "🎯",
-      value: formatLk(statistics.worstLk),
-      label: "Schlechteste LK",
-    },
-    {
-      icon: "👶",
-      value:
-        statistics.youngestYear === null
-          ? "–"
-          : `${statistics.youngestYear} · ${statistics.youngestAge} Jahre`,
-      label: "Jüngster Teilnehmer",
-    },
-    {
-      icon: "👴",
-      value:
-        statistics.oldestYear === null
-          ? "–"
-          : `${statistics.oldestYear} · ${statistics.oldestAge} Jahre`,
-      label: "Ältester Teilnehmer",
-    },
-  ];
-
   return (
-    <>
-      <section className="pageHeader">
+    <section className="statisticsPage">
+      <header className="statisticsHeader">
         <p>📊 HÜRTH OPEN IN ZAHLEN</p>
         <h2>Turnierstatistik</h2>
         <span>Zahlen und Fakten zum Teilnehmerfeld</span>
-      </section>
+      </header>
 
-      <section
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))",
-          gap: 14,
-          marginBottom: 18,
-        }}
-      >
-        {mainStats.map((stat) => (
-          <article
-            key={stat.label}
-            style={{
-              background:
-                "linear-gradient(135deg, rgba(184, 15, 47, 0.94), rgba(55, 13, 26, 0.96))",
-              border: "1px solid rgba(255, 255, 255, 0.1)",
-              borderRadius: 24,
-              padding: 20,
-              boxShadow: "0 18px 42px rgba(0, 0, 0, 0.35)",
-            }}
-          >
-            <span style={{ fontSize: 28 }}>{stat.icon}</span>
+      <div className="statisticsHighlights">
+        <article className="statisticsHighlight">
+          <span className="statisticsIcon">👥</span>
+          <strong>{stats.participants}</strong>
+          <small>Teilnehmer</small>
+        </article>
 
-            <b
-              style={{
-                display: "block",
-                marginTop: 12,
-                color: "white",
-                fontSize: 36,
-                lineHeight: 1,
-              }}
-            >
-              {stat.value}
-            </b>
+        <article className="statisticsHighlight">
+          <span className="statisticsIcon">🏛️</span>
+          <strong>{stats.clubs}</strong>
+          <small>Vereine</small>
+        </article>
 
-            <small
-              style={{
-                display: "block",
-                marginTop: 8,
-                color: "#ffd9e1",
-                fontWeight: 900,
-              }}
-            >
-              {stat.label}
-            </small>
-          </article>
-        ))}
-      </section>
+        <article className="statisticsHighlight">
+          <span className="statisticsIcon">🎾</span>
+          <strong>{stats.matches}</strong>
+          <small>Spiele</small>
+        </article>
 
-      <section
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: 14,
-        }}
-      >
-        {detailStats.map((stat) => (
-          <article
-            key={stat.label}
-            style={{
-              background: "rgba(20, 20, 20, 0.96)",
-              border: "1px solid #2b2b2b",
-              borderRadius: 22,
-              padding: 18,
-              boxShadow: "0 14px 36px rgba(0, 0, 0, 0.35)",
-            }}
-          >
-            <span style={{ fontSize: 25 }}>{stat.icon}</span>
+        <article className="statisticsHighlight">
+          <span className="statisticsIcon">⭐</span>
+          <strong>14</strong>
+          <small>DR-Spieler</small>
+        </article>
+      </div>
 
-            <b
-              style={{
-                display: "block",
-                marginTop: 10,
-                color: "white",
-                fontSize: 24,
-                lineHeight: 1.15,
-              }}
-            >
-              {stat.value}
-            </b>
+      <div className="statisticsGrid">
+        <article className="statisticsCard">
+          <span className="statisticsIcon">🏆</span>
+          <strong>{COMPETITION_COUNT}</strong>
+          <small>Konkurrenzen</small>
+        </article>
 
-            <small
-              style={{
-                display: "block",
-                marginTop: 7,
-                color: "#a5a5a5",
-                fontWeight: 900,
-              }}
-            >
-              {stat.label}
-            </small>
-          </article>
-        ))}
+        <article className="statisticsCard">
+          <span className="statisticsIcon">🥇</span>
+          <strong>{formatLk(stats.bestLk)}</strong>
+          <small>Beste LK</small>
+        </article>
 
-        <article
-          style={{
-            background: "rgba(20, 20, 20, 0.96)",
-            border: "1px solid #2b2b2b",
-            borderRadius: 22,
-            padding: 18,
-            boxShadow: "0 14px 36px rgba(0, 0, 0, 0.35)",
-          }}
-        >
-          <span style={{ fontSize: 25 }}>🏅</span>
+        <article className="statisticsCard">
+          <span className="statisticsIcon">🎯</span>
+          <strong>{formatLk(stats.worstLk)}</strong>
+          <small>Schlechteste LK</small>
+        </article>
 
-          <b
-            style={{
-              display: "block",
-              marginTop: 10,
-              color: "white",
-              fontSize: 21,
-              lineHeight: 1.2,
-            }}
-          >
-            {statistics.topClub
-              ? statistics.topClub[0]
-              : "Noch keine Vereinsdaten"}
-          </b>
-
-          <small
-            style={{
-              display: "block",
-              marginTop: 7,
-              color: "#a5a5a5",
-              fontWeight: 900,
-            }}
-          >
-            Verein mit den meisten Meldungen
-            {statistics.topClub ? ` · ${statistics.topClub[1]}` : ""}
+        <article className="statisticsCard">
+          <span className="statisticsIcon">👶</span>
+          <strong>
+            {stats.youngestAge === null ? "–" : `${stats.youngestAge} Jahre`}
+          </strong>
+          <small>
+            {stats.youngestYear === null
+              ? "Jüngster Teilnehmer"
+              : `Jahrgang ${stats.youngestYear}`}
           </small>
         </article>
 
-        <article
-          style={{
-            background: "rgba(20, 20, 20, 0.96)",
-            border: "1px solid #2b2b2b",
-            borderRadius: 22,
-            padding: 18,
-            boxShadow: "0 14px 36px rgba(0, 0, 0, 0.35)",
-          }}
-        >
-          <span style={{ fontSize: 25 }}>📍</span>
-
-          <b
-            style={{
-              display: "block",
-              marginTop: 10,
-              color: "white",
-              fontSize: 21,
-              lineHeight: 1.2,
-            }}
-          >
-            {statistics.farthestDistance === null
-              ? "Wird ergänzt"
-              : `${statistics.farthestClub} · ${Math.round(
-                  statistics.farthestDistance
-                )} km`}
-          </b>
-
-          <small
-            style={{
-              display: "block",
-              marginTop: 7,
-              color: "#a5a5a5",
-              fontWeight: 900,
-            }}
-          >
-            Weiteste Anreise
+        <article className="statisticsCard">
+          <span className="statisticsIcon">👴</span>
+          <strong>
+            {stats.oldestAge === null ? "–" : `${stats.oldestAge} Jahre`}
+          </strong>
+          <small>
+            {stats.oldestYear === null
+              ? "Ältester Teilnehmer"
+              : `Jahrgang ${stats.oldestYear}`}
           </small>
         </article>
-      </section>
-    </>
+
+        <article className="statisticsCard">
+          <span className="statisticsIcon">🏅</span>
+          <strong title={stats.topClub?.[0] ?? ""}>
+            {stats.topClub?.[0] ?? "–"}
+          </strong>
+          <small>
+            {stats.topClub
+              ? `${stats.topClub[1]} Meldungen · stärkster Verein`
+              : "Verein mit den meisten Meldungen"}
+          </small>
+        </article>
+
+        <article className="statisticsCard">
+          <span className="statisticsIcon">📍</span>
+          <strong>110 km</strong>
+          <small>TC Unna 1902 Grün-Weiß · weiteste Anreise</small>
+        </article>
+      </div>
+    </section>
   );
 }
 

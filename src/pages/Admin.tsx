@@ -526,10 +526,10 @@ function Admin() {
   return (
     <div
       style={{
-        width: "min(1120px, calc(100vw - 28px))",
-        maxWidth: 1120,
+        width: "100%",
+        maxWidth: "100%",
         margin: "0 auto",
-        padding: "0 14px 48px",
+        padding: "0 0 48px",
       }}
     >
       <section

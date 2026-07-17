@@ -211,6 +211,10 @@ function getNextMatchInfo(drawMatchId?: string) {
   return null;
 }
 
+function hasRealPlayers(match: Match) {
+  return !isPlaceholderName(match.a) && !isPlaceholderName(match.b);
+}
+
 function getStatusLabel(status: Match["status"]) {
   if (status === "live") return "LIVE";
   if (status === "done") return "FERTIG";
@@ -519,7 +523,12 @@ function Admin() {
       const matchesStatus =
         selectedStatus === "Alle" || match.status === selectedStatus;
 
-      return matchesDate && matchesCourt && matchesStatus;
+      return (
+        hasRealPlayers(match) &&
+        matchesDate &&
+        matchesCourt &&
+        matchesStatus
+      );
     })
   );
 

@@ -6,8 +6,31 @@ type ScheduleProps = {
   players: Player[];
 };
 
+function normalizeMatchName(name: string) {
+  return name.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+function isPlaceholder(name: string) {
+  const normalized = normalizeMatchName(name);
+
+  return (
+    normalized === "" ||
+    normalized === "offen" ||
+    normalized === "n.a." ||
+    normalized === "n.a" ||
+    normalized.includes("sieger") ||
+    normalized.includes("finalist") ||
+    normalized.includes("verlierer") ||
+    normalized.includes("turniersieger") ||
+    normalized.includes("halbfinale") ||
+    normalized.includes("viertelfinale") ||
+    normalized.includes("achtelfinale") ||
+    normalized.includes("runde")
+  );
+}
+
 function isVisibleMatch(match: Match) {
-  return match.a !== "offen" && match.b !== "offen";
+  return !isPlaceholder(match.a) && !isPlaceholder(match.b);
 }
 
 function getDatePart(time: string) {
@@ -60,11 +83,13 @@ function Schedule({ matches, players }: ScheduleProps) {
   const filteredMatches =
     selectedDate === "Alle"
       ? visibleScheduleMatches
-      : visibleScheduleMatches.filter((match) => getDatePart(match.time) === selectedDate);
+      : visibleScheduleMatches.filter(
+          (match) => getDatePart(match.time) === selectedDate
+        );
 
-  const times = Array.from(new Set(filteredMatches.map((match) => match.time))).sort(
-    (a, b) => timeSortValue(a) - timeSortValue(b)
-  );
+  const times = Array.from(
+    new Set(filteredMatches.map((match) => match.time))
+  ).sort((a, b) => timeSortValue(a) - timeSortValue(b));
 
   function openPlayer(name: string) {
     const wanted = normalizeName(name);
@@ -162,7 +187,9 @@ function Schedule({ matches, players }: ScheduleProps) {
                     </div>
 
                     <div className="scheduleStatus">
-                      {match.status === "live" && <em>🟢 läuft seit {match.since} Uhr</em>}
+                      {match.status === "live" && (
+                        <em>🟢 läuft seit {match.since} Uhr</em>
+                      )}
                       {match.status === "planned" && <em>⏭️ angesetzt</em>}
                       {match.status === "done" && <em>🏆 {match.result}</em>}
                     </div>
@@ -176,8 +203,11 @@ function Schedule({ matches, players }: ScheduleProps) {
 
       {(selectedPlayer || fallbackName) && (
         <div className="playerOverlay" onClick={closeModal}>
-          <article className="playerModal" onClick={(event) => event.stopPropagation()}>
-            <button className="modalClose" onClick={closeModal}>
+          <article
+            className="playerModal"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button className="modalClose" type="button" onClick={closeModal}>
               ×
             </button>
 
@@ -216,7 +246,10 @@ function Schedule({ matches, players }: ScheduleProps) {
                 <div className="playerFacts">
                   <div>
                     <span>Hinweis</span>
-                    <b>Dieser Spieler ist noch nicht in der Teilnehmerliste hinterlegt.</b>
+                    <b>
+                      Dieser Spieler ist noch nicht in der Teilnehmerliste
+                      hinterlegt.
+                    </b>
                   </div>
                 </div>
               </>

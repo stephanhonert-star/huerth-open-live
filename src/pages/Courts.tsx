@@ -7,13 +7,26 @@ type CourtsProps = {
 
 const courts = [1, 2, 3, 4, 5, 6];
 
+function normalizeName(name: string) {
+  return name.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
 function isPlaceholder(name: string) {
+  const normalized = normalizeName(name);
+
   return (
-    name.includes("Sieger") ||
-    name.includes("Finalist") ||
-    name.includes("Verlierer") ||
-    name.includes("Turniersieger") ||
-    name === "offen"
+    normalized === "" ||
+    normalized === "offen" ||
+    normalized === "n.a." ||
+    normalized === "n.a" ||
+    normalized.includes("sieger") ||
+    normalized.includes("finalist") ||
+    normalized.includes("verlierer") ||
+    normalized.includes("turniersieger") ||
+    normalized.includes("halbfinale") ||
+    normalized.includes("viertelfinale") ||
+    normalized.includes("achtelfinale") ||
+    normalized.includes("runde")
   );
 }
 
@@ -116,7 +129,9 @@ function Courts({ matches }: CourtsProps) {
                 <div className="courtEmpty">
                   <strong>{court === 6 ? "Reserveplatz" : "frei"}</strong>
                   <span>
-                    {court === 6 ? "Nur bei Bedarf eingeplant" : "Aktuell kein Spiel angesetzt"}
+                    {court === 6
+                      ? "Nur bei Bedarf eingeplant"
+                      : "Aktuell kein Spiel angesetzt"}
                   </span>
                 </div>
               )}
@@ -127,7 +142,10 @@ function Courts({ matches }: CourtsProps) {
 
       {selectedCourt !== null && (
         <div className="playerOverlay" onClick={closeModal}>
-          <article className="playerModal" onClick={(event) => event.stopPropagation()}>
+          <article
+            className="playerModal"
+            onClick={(event) => event.stopPropagation()}
+          >
             <button className="modalClose" type="button" onClick={closeModal}>
               ×
             </button>
@@ -139,7 +157,9 @@ function Courts({ matches }: CourtsProps) {
               {selectedCourtMatches.length > 0 ? (
                 selectedCourtMatches.map((match) => (
                   <div key={`${match.time}-${match.a}-${match.b}`}>
-                    <span>{match.time} Uhr · {match.competition}</span>
+                    <span>
+                      {match.time} Uhr · {match.competition}
+                    </span>
                     <b>
                       {match.a} gegen {match.b}
                     </b>
@@ -158,7 +178,10 @@ function Courts({ matches }: CourtsProps) {
 
       {selectedPlayer && (
         <div className="playerOverlay" onClick={closeModal}>
-          <article className="playerModal" onClick={(event) => event.stopPropagation()}>
+          <article
+            className="playerModal"
+            onClick={(event) => event.stopPropagation()}
+          >
             <button className="modalClose" type="button" onClick={closeModal}>
               ×
             </button>

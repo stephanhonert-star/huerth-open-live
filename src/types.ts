@@ -1,4 +1,11 @@
-export type Tab = "start" | "courts" | "plan" | "draws" | "teilnehmer" | "gastro" | "admin";
+export type Tab =
+  | "start"
+  | "courts"
+  | "plan"
+  | "draws"
+  | "teilnehmer"
+  | "gastro"
+  | "admin";
 
 export type MatchStatus = "live" | "planned" | "done";
 
@@ -21,6 +28,9 @@ export interface Player {
   lk: string;
   year: string;
   competition: string;
+
+  ranking?: string;
+  distanceKm?: number;
 }
 
 export interface MenuItem {

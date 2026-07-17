@@ -24,11 +24,58 @@ function findMatch(draws: Draw[], matchId: string): DrawMatch | undefined {
   for (const draw of draws) {
     for (const round of draw.rounds) {
       const match = round.matches.find((item) => item.id === matchId);
-      if (match) return match;
+
+      if (match) {
+        return match;
+      }
     }
   }
 
   return undefined;
+}
+
+function clearAdvancedPlayer(
+  draws: Draw[],
+  currentMatch: DrawMatch,
+): void {
+  if (!currentMatch.nextMatchId || !currentMatch.nextSlot) {
+    return;
+  }
+
+  const nextMatch = findMatch(draws, currentMatch.nextMatchId);
+
+  if (!nextMatch) {
+    return;
+  }
+
+  /*
+   * Falls das nachfolgende Spiel bereits beendet wurde, muss dessen
+   * Fortschreibung ebenfalls zurückgenommen werden. Andernfalls könnte
+   * ein Spieler noch eine weitere Runde im Baum stehen bleiben.
+   */
+  if (
+    nextMatch.status === "done" ||
+    Boolean(nextMatch.result) ||
+    Boolean(nextMatch.winner)
+  ) {
+    clearAdvancedPlayer(draws, nextMatch);
+    nextMatch.status = "planned";
+    nextMatch.result = "";
+    nextMatch.winner = "";
+  }
+
+  /*
+   * Der Slot gehört eindeutig zum aktuellen Spiel. Deshalb wird er beim
+   * Zurücksetzen immer geleert – unabhängig davon, ob winner zuvor bereits
+   * im Admin-Spiel gelöscht wurde.
+   */
+  if (currentMatch.nextSlot === "playerA") {
+    nextMatch.playerA = undefined;
+  }
+
+  if (currentMatch.nextSlot === "playerB") {
+    nextMatch.playerB = undefined;
+  }
 }
 
 export function updateDrawSchedule(
@@ -36,14 +83,18 @@ export function updateDrawSchedule(
   values: {
     court?: number;
     time?: string;
-  }
+  },
 ): Draw[] {
-  if (!drawMatchId) return loadDraws();
+  if (!drawMatchId) {
+    return loadDraws();
+  }
 
   const draws = loadDraws();
   const currentMatch = findMatch(draws, drawMatchId);
 
-  if (!currentMatch) return draws;
+  if (!currentMatch) {
+    return draws;
+  }
 
   if (typeof values.court === "number") {
     currentMatch.court = values.court;
@@ -60,12 +111,14 @@ export function updateDrawSchedule(
 export function updateDrawAfterResult(
   drawMatchId: string,
   winnerName: string,
-  result: string
+  result: string,
 ): Draw[] {
   const draws = loadDraws();
   const currentMatch = findMatch(draws, drawMatchId);
 
-  if (!currentMatch) return draws;
+  if (!currentMatch) {
+    return draws;
+  }
 
   currentMatch.status = "done";
   currentMatch.result = result;
@@ -93,33 +146,15 @@ export function undoDrawResult(drawMatchId: string): Draw[] {
   const draws = loadDraws();
   const currentMatch = findMatch(draws, drawMatchId);
 
-  if (!currentMatch) return draws;
+  if (!currentMatch) {
+    return draws;
+  }
 
-  const oldWinner = currentMatch.winner;
+  clearAdvancedPlayer(draws, currentMatch);
 
   currentMatch.status = "planned";
   currentMatch.result = "";
   currentMatch.winner = "";
-
-  if (currentMatch.nextMatchId && currentMatch.nextSlot && oldWinner) {
-    const nextMatch = findMatch(draws, currentMatch.nextMatchId);
-
-    if (nextMatch) {
-      if (
-        currentMatch.nextSlot === "playerA" &&
-        nextMatch.playerA?.name === oldWinner
-      ) {
-        nextMatch.playerA = { name: `Sieger Match ${currentMatch.matchIndex}` };
-      }
-
-      if (
-        currentMatch.nextSlot === "playerB" &&
-        nextMatch.playerB?.name === oldWinner
-      ) {
-        nextMatch.playerB = { name: `Sieger Match ${currentMatch.matchIndex}` };
-      }
-    }
-  }
 
   saveDraws(draws);
   return draws;

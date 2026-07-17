@@ -561,7 +561,7 @@ function Home({
                 ["🎾", statistics.estimatedMatches, "Spiele inkl. Nebenrunde"],
                 ["🥇", formatLk(statistics.bestLk), "Beste LK"],
                 ["🎯", formatLk(statistics.worstLk), "Schlechteste LK"],
-                ["⭐", statistics.rankingPlayers, "Deutsche Rangliste"],
+                ["⭐", 14, "Deutsche Rangliste"],
                 [
                   "👶",
                   statistics.youngestYear === null
@@ -671,11 +671,7 @@ function Home({
                     fontSize: 20,
                   }}
                 >
-                  {statistics.farthestDistance === null
-                    ? "Wird ergänzt"
-                    : `${statistics.farthestClub} · ${Math.round(
-                        statistics.farthestDistance
-                      )} km`}
+                  110 km
                 </b>
                 <small
                   style={{
@@ -685,7 +681,7 @@ function Home({
                     fontWeight: 850,
                   }}
                 >
-                  Weiteste Anreise
+                  TC Unna 1902 Grün-Weiß
                 </small>
               </div>
             </div>

@@ -766,10 +766,11 @@ function Admin() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(6, minmax(285px, 1fr))",
-              gap: 14,
+              gridTemplateColumns: "repeat(6, minmax(0, 1fr))",
+              gap: 8,
               alignItems: "start",
-              overflowX: "auto",
+              width: "100%",
+              overflow: "visible",
               paddingBottom: 14,
             }}
           >
@@ -782,11 +783,11 @@ function Admin() {
                 <section
                   key={court}
                   style={{
-                    minWidth: 285,
+                    minWidth: 0,
                     background: "rgba(15, 15, 15, 0.94)",
                     border: "1px solid #2b2b2b",
-                    borderRadius: 22,
-                    padding: 12,
+                    borderRadius: 18,
+                    padding: 8,
                   }}
                 >
                   <div
@@ -795,9 +796,9 @@ function Admin() {
                       justifyContent: "space-between",
                       alignItems: "center",
                       gap: 10,
-                      padding: "4px 4px 12px",
+                      padding: "3px 2px 9px",
                       borderBottom: "1px solid #2b2b2b",
-                      marginBottom: 12,
+                      marginBottom: 9,
                     }}
                   >
                     <div>
@@ -805,7 +806,7 @@ function Admin() {
                         style={{
                           display: "block",
                           color: court === 6 ? "#ffbf69" : "#80ffad",
-                          fontSize: 12,
+                          fontSize: 10,
                           fontWeight: 950,
                           letterSpacing: 1.2,
                           textTransform: "uppercase",
@@ -813,15 +814,15 @@ function Admin() {
                       >
                         {court === 6 ? "Reserve" : "Matchplatz"}
                       </span>
-                      <strong style={{ color: "white", fontSize: 22 }}>
+                      <strong style={{ color: "white", fontSize: 18 }}>
                         Platz {court}
                       </strong>
                     </div>
 
                     <span
                       style={{
-                        minWidth: 34,
-                        height: 34,
+                        minWidth: 28,
+                        height: 28,
                         borderRadius: 999,
                         display: "inline-flex",
                         alignItems: "center",
@@ -847,7 +848,7 @@ function Admin() {
                       Keine Spiele
                     </div>
                   ) : (
-                    <div style={{ display: "grid", gap: 12 }}>
+                    <div style={{ display: "grid", gap: 8 }}>
                       {courtMatches.map((match) => {
                         const matchKey = getMatchKey(match);
                         const isEditing = editingMatchId === matchKey;
@@ -857,34 +858,57 @@ function Admin() {
                             className={`adminMatchCard adminMatchCardCompact adminMatchCard-${match.status}`}
                             key={matchKey}
                             style={{
-                              padding: 14,
-                              borderRadius: 18,
+                              padding: 10,
+                              borderRadius: 15,
                               minWidth: 0,
                             }}
                           >
                             <div className="adminMatchTop">
                               <div>
-                                <b>{match.time || "Noch nicht terminiert"}</b>
-                                <span>Platz {match.court || "offen"}</span>
+                                <b style={{ fontSize: 13 }}>
+                                  {match.time || "Noch nicht terminiert"}
+                                </b>
+                                <span style={{ fontSize: 10 }}>
+                                  Platz {match.court || "offen"}
+                                </span>
                               </div>
 
                               <em>{getStatusLabel(match.status)}</em>
                             </div>
 
-                            <small>{match.competition}</small>
+                            <small style={{ fontSize: 10 }}>
+                              {match.competition}
+                            </small>
 
                             <div
                               className="adminPlayers"
                               style={{
                                 display: "grid",
-                                gridTemplateColumns: "1fr auto 1fr",
+                                gridTemplateColumns:
+                                  "minmax(0, 1fr) auto minmax(0, 1fr)",
                                 alignItems: "center",
-                                gap: 8,
+                                gap: 4,
                               }}
                             >
-                              <strong>{match.a}</strong>
-                              <span>gegen</span>
-                              <strong>{match.b}</strong>
+                              <strong
+                                style={{
+                                  fontSize: 13,
+                                  lineHeight: 1.12,
+                                  overflowWrap: "anywhere",
+                                }}
+                              >
+                                {match.a}
+                              </strong>
+                              <span style={{ fontSize: 9 }}>gegen</span>
+                              <strong
+                                style={{
+                                  fontSize: 13,
+                                  lineHeight: 1.12,
+                                  overflowWrap: "anywhere",
+                                }}
+                              >
+                                {match.b}
+                              </strong>
                             </div>
 
                             {match.status === "live" && (
@@ -902,6 +926,7 @@ function Admin() {
                             <button
                               type="button"
                               className="adminEditToggle"
+                              style={{ padding: "6px 8px", fontSize: 10 }}
                               onClick={() =>
                                 setEditingMatchId(isEditing ? null : matchKey)
                               }
@@ -982,15 +1007,16 @@ function Admin() {
                               style={{
                                 display: "grid",
                                 gridTemplateColumns: "1fr",
-                                gap: 8,
+                                gap: 6,
                               }}
                             >
                               {match.status === "planned" && (
                                 <button
                                   type="button"
+                                  style={{ padding: "8px 6px", fontSize: 11 }}
                                   onClick={() => startMatch(match)}
                                 >
-                                  <Play size={18} />
+                                  <Play size={14} />
                                   Spiel starten
                                 </button>
                               )}
@@ -998,9 +1024,10 @@ function Admin() {
                               {match.status === "live" && (
                                 <button
                                   type="button"
+                                  style={{ padding: "8px 6px", fontSize: 11 }}
                                   onClick={() => undoStartMatch(match)}
                                 >
-                                  <Square size={18} />
+                                  <Square size={14} />
                                   Start rückgängig
                                 </button>
                               )}
@@ -1008,6 +1035,7 @@ function Admin() {
                               {match.status === "done" && (
                                 <button
                                   type="button"
+                                  style={{ padding: "8px 6px", fontSize: 11 }}
                                   onClick={() =>
                                     updateMatch({
                                       ...match,
@@ -1016,16 +1044,17 @@ function Admin() {
                                     })
                                   }
                                 >
-                                  <RotateCcw size={18} />
+                                  <RotateCcw size={14} />
                                   Zurücksetzen
                                 </button>
                               )}
 
                               <button
                                 type="button"
+                                style={{ padding: "8px 6px", fontSize: 11 }}
                                 onClick={() => setSelectedMatch(match)}
                               >
-                                <Trophy size={18} />
+                                <Trophy size={14} />
                                 Ergebnis
                               </button>
                             </div>

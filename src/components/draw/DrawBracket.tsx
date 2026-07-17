@@ -9,15 +9,19 @@ type DrawBracketProps = {
   draw: Draw;
 };
 
-type RoundStyle = CSSProperties & {
-  "--round-count": number;
-  "--round-index": number;
+type RailStyle = CSSProperties & {
   "--max-round-count": number;
+};
+
+type MatchSlotStyle = CSSProperties & {
+  "--match-position": string;
 };
 
 function getRoundClass(round: DrawRound) {
   if (round.name === "Finale") return "drawColumn drawFinalColumn";
-  if (round.name === "Spiel um Platz 3") return "drawColumn drawThirdColumn";
+  if (round.name === "Spiel um Platz 3") {
+    return "drawColumn drawThirdColumn";
+  }
   if (round.name === "Sieger") return "drawColumn drawWinnerColumn";
 
   return "drawColumn";
@@ -34,27 +38,21 @@ function getRoundLabel(round: DrawRound) {
 function renderMatch(
   round: DrawRound,
   match: DrawRound["matches"][number],
-  isLastRound: boolean,
+  showConnector: boolean,
 ) {
   if (round.name === "Sieger") {
-    return <WinnerCard key={match.id} match={match} />;
+    return <WinnerCard match={match} />;
   }
 
   if (round.name === "Finale") {
-    return <FinalCard key={match.id} match={match} />;
+    return <FinalCard match={match} />;
   }
 
   if (round.name === "Spiel um Platz 3") {
-    return <ThirdPlaceCard key={match.id} match={match} />;
+    return <ThirdPlaceCard match={match} />;
   }
 
-  return (
-    <DrawMatchCard
-      key={match.id}
-      match={match}
-      showConnector={!isLastRound}
-    />
-  );
+  return <DrawMatchCard match={match} showConnector={showConnector} />;
 }
 
 function DrawBracket({ draw }: DrawBracketProps) {
@@ -67,38 +65,30 @@ function DrawBracket({ draw }: DrawBracketProps) {
         ...draw.rounds
           .filter(
             (round) =>
-              round.name !== "Sieger" && round.name !== "Spiel um Platz 3",
+              round.name !== "Sieger" &&
+              round.name !== "Spiel um Platz 3",
           )
           .map((round) => round.matches.length),
       ),
     [draw.rounds],
   );
 
+  const railStyle: RailStyle = {
+    "--max-round-count": maxRoundCount,
+  };
+
   return (
     <>
       <section className="drawStage" ref={scrollRef}>
-        <div
-          className="drawRail"
-          style={
-            {
-              "--max-round-count": maxRoundCount,
-            } as CSSProperties
-          }
-        >
-          {draw.rounds.map((round, index) => {
-            const isLastRound = index === draw.rounds.length - 1;
-
-            const roundStyle: RoundStyle = {
-              "--round-count": Math.max(1, round.matches.length),
-              "--round-index": index,
-              "--max-round-count": maxRoundCount,
-            };
+        <div className="drawRail" style={railStyle}>
+          {draw.rounds.map((round, roundIndex) => {
+            const roundCount = Math.max(1, round.matches.length);
+            const showConnector = round.name !== "Sieger";
 
             return (
               <section
                 className={getRoundClass(round)}
-                key={`${round.name}-${index}`}
-                style={roundStyle}
+                key={`${round.name}-${roundIndex}`}
               >
                 <div className="drawColumnHead">
                   <b>{getRoundLabel(round)}</b>
@@ -109,9 +99,24 @@ function DrawBracket({ draw }: DrawBracketProps) {
                 </div>
 
                 <div className="drawColumnBody">
-                  {round.matches.map((match) =>
-                    renderMatch(round, match, isLastRound),
-                  )}
+                  {round.matches.map((match, matchIndex) => {
+                    const position =
+                      ((matchIndex + 0.5) / roundCount) * 100;
+
+                    const slotStyle: MatchSlotStyle = {
+                      "--match-position": `${position}%`,
+                    };
+
+                    return (
+                      <div
+                        className="drawMatchSlot"
+                        key={match.id}
+                        style={slotStyle}
+                      >
+                        {renderMatch(round, match, showConnector)}
+                      </div>
+                    );
+                  })}
                 </div>
               </section>
             );

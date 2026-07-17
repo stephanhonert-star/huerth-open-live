@@ -17,51 +17,57 @@ function Navigation({ activeTab, onChangeTab }: NavigationProps) {
   return (
     <nav className="nav">
       <button
+        type="button"
         onClick={() => onChangeTab("start")}
         className={activeTab === "start" ? "active" : ""}
       >
         <Home />
-        Start
+        <span>Start</span>
       </button>
 
       <button
+        type="button"
         onClick={() => onChangeTab("courts")}
         className={activeTab === "courts" ? "active" : ""}
       >
         <MapPin />
-        Plätze
+        <span>Plätze</span>
       </button>
 
       <button
+        type="button"
         onClick={() => onChangeTab("plan")}
         className={activeTab === "plan" ? "active" : ""}
       >
         <CalendarDays />
-        Plan
+        <span>Plan</span>
       </button>
 
       <button
+        type="button"
         onClick={() => onChangeTab("draws")}
         className={activeTab === "draws" ? "active" : ""}
       >
         <GitBranch />
-        Baum
+        <span>Baum</span>
       </button>
 
       <button
+        type="button"
         onClick={() => onChangeTab("teilnehmer")}
         className={activeTab === "teilnehmer" ? "active" : ""}
       >
         <Users />
-        Spieler
+        <span>Spieler</span>
       </button>
 
       <button
+        type="button"
         onClick={() => onChangeTab("statistik")}
         className={activeTab === "statistik" ? "active" : ""}
       >
         <BarChart3 />
-        Statistik
+        <span>Statistik</span>
       </button>
     </nav>
   );

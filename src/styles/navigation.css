@@ -2,79 +2,91 @@
   position: fixed;
   left: 50%;
   bottom: 14px;
-  transform: translateX(-50%);
-  width: min(760px, calc(100% - 18px));
+  z-index: 1000;
+  width: min(760px, calc(100% - 24px));
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 6px;
-  background: rgba(21, 21, 21, 0.96);
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
   padding: 10px;
-  border-radius: 28px;
-  border: 1px solid #303030;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
-  z-index: 50;
+  transform: translateX(-50%);
+  background: rgba(18, 18, 18, 0.97);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(18px);
 }
 
 .nav button {
-  border: 0;
-  background: transparent;
-  color: #d8d8d8;
-  border-radius: 18px;
-  padding: 10px 4px;
+  min-width: 0;
+  height: 58px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  font-weight: 850;
-  font-size: 15px;
+  gap: 4px;
+  padding: 6px 2px;
+  border: 0;
+  border-radius: 16px;
+  background: transparent;
+  color: #9b9b9b;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.nav button svg {
+  width: 21px;
+  height: 21px;
+  stroke-width: 2.2;
+  flex: 0 0 auto;
+}
+
+.nav button span {
+  width: 100%;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav button:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.nav button:active {
+  transform: scale(0.96);
 }
 
 .nav button.active {
-  background: linear-gradient(180deg, var(--red), #940b25);
   color: white;
-  box-shadow: 0 8px 20px rgba(184, 15, 47, 0.35);
+  background: linear-gradient(135deg, #c81035, #7e1027);
+  box-shadow: 0 10px 24px rgba(184, 15, 47, 0.28);
 }
 
-.nav button:hover:not(.active) {
-  background: rgba(255, 255, 255, 0.05);
-  color: white;
-}
-
-.nav svg {
-  width: 22px;
-  height: 22px;
-}
-
-@media (max-width: 700px) {
+@media (max-width: 560px) {
   .nav {
-    width: calc(100% - 14px);
-    padding: 8px;
+    bottom: 8px;
+    width: calc(100% - 12px);
     gap: 4px;
-    border-radius: 24px;
+    padding: 7px;
+    border-radius: 20px;
   }
 
   .nav button {
-    padding: 9px 2px;
-    font-size: 13px;
-    gap: 4px;
+    height: 54px;
+    border-radius: 14px;
+    font-size: 9px;
   }
 
-  .nav svg {
-    width: 20px;
-    height: 20px;
-  }
-}
-
-@media (max-width: 420px) {
-  .nav button {
-    font-size: 12px;
-  }
-
-  .nav svg {
-    width: 18px;
-    height: 18px;
+  .nav button svg {
+    width: 19px;
+    height: 19px;
   }
 }

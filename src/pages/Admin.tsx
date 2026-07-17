@@ -65,7 +65,7 @@ async function publishLiveData(matches: Match[], players: Player[]) {
       players,
       draws: loadDraws(),
       updatedAt: new Date().toISOString(),
-    })
+    }),
   );
 }
 
@@ -156,7 +156,7 @@ function isPlaceholderName(name: string) {
 }
 
 function createPlayersFromDraw(
-  result: Awaited<ReturnType<typeof parseDrawFromPdf>>
+  result: Awaited<ReturnType<typeof parseDrawFromPdf>>,
 ): Player[] {
   const players: Player[] = [];
 
@@ -170,7 +170,7 @@ function createPlayersFromDraw(
           const exists = players.some(
             (player) =>
               player.name === drawPlayer.name &&
-              player.competition === draw.competition
+              player.competition === draw.competition,
           );
 
           if (exists) return;
@@ -224,15 +224,14 @@ function getStatusLabel(status: Match["status"]) {
 function Admin() {
   const [password, setPassword] = useState("");
   const [unlocked, setUnlocked] = useState(
-    () => sessionStorage.getItem("huerth-open-admin") === "true"
+    () => sessionStorage.getItem("huerth-open-admin") === "true",
   );
   const [error, setError] = useState("");
   const [matches, setMatches] = useState<Match[]>(loadMatches);
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [selectedDate, setSelectedDate] = useState("Alle");
   const [selectedCourt, setSelectedCourt] = useState("Alle");
-  const [selectedStatus, setSelectedStatus] =
-    useState<StatusFilter>("Alle");
+  const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("Alle");
   const [importMessage, setImportMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [editingMatchId, setEditingMatchId] = useState<string | null>(null);
@@ -258,7 +257,7 @@ function Admin() {
     const updatedKey = getMatchKey(updatedMatch);
 
     const nextMatches = matches.map((match) =>
-      getMatchKey(match) === updatedKey ? updatedMatch : match
+      getMatchKey(match) === updatedKey ? updatedMatch : match,
     );
 
     setMatches(nextMatches);
@@ -306,9 +305,7 @@ function Admin() {
   async function changeDate(match: Match, date: string) {
     const clock = getTimePart(match.time).replace("Uhr", "").trim();
     const nextTime =
-      date === "Ohne Datum"
-        ? clock
-        : `${date}${clock ? ` ${clock}` : ""}`;
+      date === "Ohne Datum" ? clock : `${date}${clock ? ` ${clock}` : ""}`;
 
     updateDrawSchedule(match.drawMatchId, {
       time: nextTime,
@@ -330,19 +327,19 @@ function Admin() {
 
       const importedDrawIds = new Set(result.draws.map((draw) => draw.id));
       const importedCompetitions = new Set(
-        result.draws.map((draw) => draw.competition)
+        result.draws.map((draw) => draw.competition),
       );
 
       const existingDraws = loadDraws().filter(
-        (draw) => !importedDrawIds.has(draw.id)
+        (draw) => !importedDrawIds.has(draw.id),
       );
 
       const existingMatches = matches.filter(
-        (match) => !importedCompetitions.has(match.competition)
+        (match) => !importedCompetitions.has(match.competition),
       );
 
       const existingPlayers = loadPlayers().filter(
-        (player) => !importedCompetitions.has(player.competition)
+        (player) => !importedCompetitions.has(player.competition),
       );
 
       const nextDraws = [...existingDraws, ...result.draws];
@@ -357,7 +354,7 @@ function Admin() {
       await publishLiveData(nextMatches, nextPlayers);
 
       setImportMessage(
-        `${result.draws.length} Konkurrenzen importiert · ${importedPlayers.length} Spieler · ${result.matches.length} Spiele`
+        `${result.draws.length} Konkurrenzen importiert · ${importedPlayers.length} Spieler · ${result.matches.length} Spiele`,
       );
     } catch (importError) {
       console.error(importError);
@@ -456,7 +453,7 @@ function Admin() {
 
   async function resetEverything() {
     const confirmed = window.confirm(
-      "Wirklich alle importierten Spieler und gespeicherten Ergebnisse löschen?"
+      "Wirklich alle importierten Spieler und gespeicherten Ergebnisse löschen?",
     );
 
     if (!confirmed) return;
@@ -505,7 +502,7 @@ function Admin() {
   }
 
   const dates = Array.from(
-    new Set(matches.map((match) => getDatePart(match.time)))
+    new Set(matches.map((match) => getDatePart(match.time))),
   ).sort((a, b) => dateSortValue(a) - dateSortValue(b));
 
   const plannedMatches = matches.filter((match) => match.status === "planned");
@@ -524,12 +521,9 @@ function Admin() {
         selectedStatus === "Alle" || match.status === selectedStatus;
 
       return (
-        hasRealPlayers(match) &&
-        matchesDate &&
-        matchesCourt &&
-        matchesStatus
+        hasRealPlayers(match) && matchesDate && matchesCourt && matchesStatus
       );
-    })
+    }),
   );
 
   return (
@@ -772,182 +766,275 @@ function Admin() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+              gridTemplateColumns: "repeat(6, minmax(285px, 1fr))",
               gap: 14,
               alignItems: "start",
+              overflowX: "auto",
+              paddingBottom: 14,
             }}
           >
-            {filteredMatches.map((match) => {
-              const matchKey = getMatchKey(match);
-              const isEditing = editingMatchId === matchKey;
+            {[1, 2, 3, 4, 5, 6].map((court) => {
+              const courtMatches = filteredMatches.filter(
+                (match) => match.court === court,
+              );
 
               return (
-                <article
-                  className={`adminMatchCard adminMatchCardCompact adminMatchCard-${match.status}`}
-                  key={matchKey}
+                <section
+                  key={court}
                   style={{
-                    padding: 16,
-                    borderRadius: 20,
-                    minWidth: 0,
+                    minWidth: 285,
+                    background: "rgba(15, 15, 15, 0.94)",
+                    border: "1px solid #2b2b2b",
+                    borderRadius: 22,
+                    padding: 12,
                   }}
                 >
-                  <div className="adminMatchTop">
-                    <div>
-                      <b>{match.time || "Noch nicht terminiert"}</b>
-                      <span>Platz {match.court || "offen"}</span>
-                    </div>
-
-                    <em>{getStatusLabel(match.status)}</em>
-                  </div>
-
-                  <small>{match.competition}</small>
-
                   <div
-                    className="adminPlayers"
                     style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr auto 1fr",
+                      display: "flex",
+                      justifyContent: "space-between",
                       alignItems: "center",
                       gap: 10,
+                      padding: "4px 4px 12px",
+                      borderBottom: "1px solid #2b2b2b",
+                      marginBottom: 12,
                     }}
                   >
-                    <strong>{match.a}</strong>
-                    <span>gegen</span>
-                    <strong>{match.b}</strong>
-                  </div>
+                    <div>
+                      <span
+                        style={{
+                          display: "block",
+                          color: court === 6 ? "#ffbf69" : "#80ffad",
+                          fontSize: 12,
+                          fontWeight: 950,
+                          letterSpacing: 1.2,
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        {court === 6 ? "Reserve" : "Matchplatz"}
+                      </span>
+                      <strong style={{ color: "white", fontSize: 22 }}>
+                        Platz {court}
+                      </strong>
+                    </div>
 
-                  {match.status === "live" && (
-                    <p className="adminInfo">läuft seit {match.since} Uhr</p>
-                  )}
-
-                  {match.result && (
-                    <p className="adminResult">Ergebnis: {match.result}</p>
-                  )}
-
-                  <button
-                    type="button"
-                    className="adminEditToggle"
-                    onClick={() =>
-                      setEditingMatchId(isEditing ? null : matchKey)
-                    }
-                  >
-                    <Settings size={16} />
-                    Bearbeiten
-                  </button>
-
-                  {isEditing && (
-                    <div
-                      className="adminEditGrid"
+                    <span
                       style={{
-                        display: "grid",
-                        gridTemplateColumns:
-                          "repeat(auto-fit, minmax(140px, 1fr))",
-                        gap: 10,
+                        minWidth: 34,
+                        height: 34,
+                        borderRadius: 999,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background: "#252525",
+                        color: "white",
+                        fontWeight: 950,
                       }}
                     >
-                      <label className="adminCourtSelect">
-                        Datum
-                        <select
-                          value={getDatePart(match.time)}
-                          onChange={(event) =>
-                            changeDate(match, event.target.value)
-                          }
-                        >
-                          <option value="Ohne Datum">Ohne Datum</option>
-                          {TOURNAMENT_DATES.map((date) => (
-                            <option key={date} value={date}>
-                              {date}2026
-                            </option>
-                          ))}
-                        </select>
-                      </label>
+                      {courtMatches.length}
+                    </span>
+                  </div>
 
-                      <label className="adminCourtSelect">
-                        Uhrzeit
-                        <input
-                          type="time"
-                          value={getTimePart(match.time)}
-                          onChange={(event) => {
-                            const date = getDatePart(match.time);
-                            const nextTime =
-                              date === "Ohne Datum"
-                                ? event.target.value
-                                : `${date} ${event.target.value}`;
+                  {courtMatches.length === 0 ? (
+                    <div
+                      style={{
+                        padding: "24px 10px",
+                        textAlign: "center",
+                        color: "#7f8794",
+                        fontWeight: 850,
+                      }}
+                    >
+                      Keine Spiele
+                    </div>
+                  ) : (
+                    <div style={{ display: "grid", gap: 12 }}>
+                      {courtMatches.map((match) => {
+                        const matchKey = getMatchKey(match);
+                        const isEditing = editingMatchId === matchKey;
 
-                            changeTime(match, nextTime);
-                          }}
-                        />
-                      </label>
+                        return (
+                          <article
+                            className={`adminMatchCard adminMatchCardCompact adminMatchCard-${match.status}`}
+                            key={matchKey}
+                            style={{
+                              padding: 14,
+                              borderRadius: 18,
+                              minWidth: 0,
+                            }}
+                          >
+                            <div className="adminMatchTop">
+                              <div>
+                                <b>{match.time || "Noch nicht terminiert"}</b>
+                                <span>Platz {match.court || "offen"}</span>
+                              </div>
 
-                      <label className="adminCourtSelect">
-                        Platz
-                        <select
-                          value={match.court}
-                          onChange={(event) =>
-                            changeCourt(match, Number(event.target.value))
-                          }
-                        >
-                          <option value={1}>Platz 1</option>
-                          <option value={2}>Platz 2</option>
-                          <option value={3}>Platz 3</option>
-                          <option value={4}>Platz 4</option>
-                          <option value={5}>Platz 5</option>
-                          <option value={6}>Platz 6 Reserve</option>
-                        </select>
-                      </label>
+                              <em>{getStatusLabel(match.status)}</em>
+                            </div>
+
+                            <small>{match.competition}</small>
+
+                            <div
+                              className="adminPlayers"
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns: "1fr auto 1fr",
+                                alignItems: "center",
+                                gap: 8,
+                              }}
+                            >
+                              <strong>{match.a}</strong>
+                              <span>gegen</span>
+                              <strong>{match.b}</strong>
+                            </div>
+
+                            {match.status === "live" && (
+                              <p className="adminInfo">
+                                läuft seit {match.since} Uhr
+                              </p>
+                            )}
+
+                            {match.result && (
+                              <p className="adminResult">
+                                Ergebnis: {match.result}
+                              </p>
+                            )}
+
+                            <button
+                              type="button"
+                              className="adminEditToggle"
+                              onClick={() =>
+                                setEditingMatchId(isEditing ? null : matchKey)
+                              }
+                            >
+                              <Settings size={16} />
+                              Bearbeiten
+                            </button>
+
+                            {isEditing && (
+                              <div
+                                className="adminEditGrid"
+                                style={{
+                                  display: "grid",
+                                  gridTemplateColumns: "1fr",
+                                  gap: 10,
+                                }}
+                              >
+                                <label className="adminCourtSelect">
+                                  Datum
+                                  <select
+                                    value={getDatePart(match.time)}
+                                    onChange={(event) =>
+                                      changeDate(match, event.target.value)
+                                    }
+                                  >
+                                    <option value="Ohne Datum">
+                                      Ohne Datum
+                                    </option>
+                                    {TOURNAMENT_DATES.map((date) => (
+                                      <option key={date} value={date}>
+                                        {date}2026
+                                      </option>
+                                    ))}
+                                  </select>
+                                </label>
+
+                                <label className="adminCourtSelect">
+                                  Uhrzeit
+                                  <input
+                                    type="time"
+                                    value={getTimePart(match.time)}
+                                    onChange={(event) => {
+                                      const date = getDatePart(match.time);
+                                      const nextTime =
+                                        date === "Ohne Datum"
+                                          ? event.target.value
+                                          : `${date} ${event.target.value}`;
+
+                                      changeTime(match, nextTime);
+                                    }}
+                                  />
+                                </label>
+
+                                <label className="adminCourtSelect">
+                                  Platz
+                                  <select
+                                    value={match.court}
+                                    onChange={(event) =>
+                                      changeCourt(
+                                        match,
+                                        Number(event.target.value),
+                                      )
+                                    }
+                                  >
+                                    <option value={1}>Platz 1</option>
+                                    <option value={2}>Platz 2</option>
+                                    <option value={3}>Platz 3</option>
+                                    <option value={4}>Platz 4</option>
+                                    <option value={5}>Platz 5</option>
+                                    <option value={6}>Platz 6 Reserve</option>
+                                  </select>
+                                </label>
+                              </div>
+                            )}
+
+                            <div
+                              className="adminActions"
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns: "1fr",
+                                gap: 8,
+                              }}
+                            >
+                              {match.status === "planned" && (
+                                <button
+                                  type="button"
+                                  onClick={() => startMatch(match)}
+                                >
+                                  <Play size={18} />
+                                  Spiel starten
+                                </button>
+                              )}
+
+                              {match.status === "live" && (
+                                <button
+                                  type="button"
+                                  onClick={() => undoStartMatch(match)}
+                                >
+                                  <Square size={18} />
+                                  Start rückgängig
+                                </button>
+                              )}
+
+                              {match.status === "done" && (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    updateMatch({
+                                      ...match,
+                                      status: "planned",
+                                      result: "",
+                                    })
+                                  }
+                                >
+                                  <RotateCcw size={18} />
+                                  Zurücksetzen
+                                </button>
+                              )}
+
+                              <button
+                                type="button"
+                                onClick={() => setSelectedMatch(match)}
+                              >
+                                <Trophy size={18} />
+                                Ergebnis
+                              </button>
+                            </div>
+                          </article>
+                        );
+                      })}
                     </div>
                   )}
-
-                  <div
-                    className="adminActions"
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: 10,
-                    }}
-                  >
-                    {match.status === "planned" && (
-                      <button type="button" onClick={() => startMatch(match)}>
-                        <Play size={18} />
-                        Spiel starten
-                      </button>
-                    )}
-
-                    {match.status === "live" && (
-                      <button
-                        type="button"
-                        onClick={() => undoStartMatch(match)}
-                      >
-                        <Square size={18} />
-                        Start rückgängig
-                      </button>
-                    )}
-
-                    {match.status === "done" && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          updateMatch({
-                            ...match,
-                            status: "planned",
-                            result: "",
-                          })
-                        }
-                      >
-                        <RotateCcw size={18} />
-                        Zurücksetzen
-                      </button>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={() => setSelectedMatch(match)}
-                    >
-                      <Trophy size={18} />
-                      Ergebnis
-                    </button>
-                  </div>
-                </article>
+                </section>
               );
             })}
           </div>

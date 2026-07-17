@@ -1,4 +1,5 @@
 import {
+  BarChart3,
   CalendarDays,
   GitBranch,
   Home,
@@ -53,6 +54,14 @@ function Navigation({ activeTab, onChangeTab }: NavigationProps) {
       >
         <Users />
         Spieler
+      </button>
+
+      <button
+        onClick={() => onChangeTab("statistik")}
+        className={activeTab === "statistik" ? "active" : ""}
+      >
+        <BarChart3 />
+        Statistik
       </button>
     </nav>
   );

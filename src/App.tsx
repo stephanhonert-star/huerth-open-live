@@ -9,6 +9,7 @@ import Draws from "./pages/Draws";
 import Home from "./pages/Home";
 import Players from "./pages/Players";
 import Schedule from "./pages/Schedule";
+import Statistics from "./pages/Statistics";
 import { db } from "./services/firebase";
 import { DRAW_STORAGE_KEY } from "./services/drawProgression";
 import type { Match, Player, Tab } from "./types";
@@ -229,6 +230,10 @@ function App() {
             selectedClub={club}
             onSelectClub={setClub}
           />
+        )}
+
+        {tab === "statistik" && (
+          <Statistics players={players} matches={matches} />
         )}
 
         {tab === "admin" && <Admin />}

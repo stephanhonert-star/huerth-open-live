@@ -4,7 +4,7 @@ export type Tab =
   | "plan"
   | "draws"
   | "teilnehmer"
-  | "gastro"
+  | "statistik"
   | "admin";
 
 export type MatchStatus = "live" | "planned" | "done";

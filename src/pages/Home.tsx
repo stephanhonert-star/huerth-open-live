@@ -123,12 +123,21 @@ function Home({
     new Set(realPlanned.map((match) => getDatePart(match.time)))
   ).sort();
 
-  const visiblePlanned =
-    selectedDate === "Alle"
-      ? realPlanned
-      : realPlanned.filter(
-          (match) => getDatePart(match.time) === selectedDate
-        );
+  const visiblePlanned = [...realPlanned]
+    .filter(
+      (match) =>
+        selectedDate === "Alle" ||
+        getDatePart(match.time) === selectedDate
+    )
+    .sort((a, b) => {
+      const timeDifference = getSortValue(a.time) - getSortValue(b.time);
+
+      if (timeDifference !== 0) {
+        return timeDifference;
+      }
+
+      return a.court - b.court;
+    });
 
   const statistics = useMemo(() => {
     const validPlayers = players.filter((player) => player.name.trim() !== "");

@@ -21,6 +21,7 @@ import {
   loadDraws,
   resetDraws,
   saveDraws,
+  undoDrawResult,
   updateDrawAfterResult,
   updateDrawSchedule,
 } from "../services/drawProgression";
@@ -705,6 +706,39 @@ function Admin() {
     setSelectedMatch(null);
   }
 
+  async function resetResult(matchToReset: Match) {
+    const nextInfo = getNextMatchInfo(matchToReset.drawMatchId);
+
+    if (matchToReset.drawMatchId) {
+      undoDrawResult(matchToReset.drawMatchId);
+    }
+
+    const nextMatches = matches.map((match) => {
+      if (getMatchKey(match) === getMatchKey(matchToReset)) {
+        return {
+          ...match,
+          status: "planned" as const,
+          result: "",
+          since: "",
+        };
+      }
+
+      if (nextInfo && match.drawMatchId === nextInfo.nextMatchId) {
+        return {
+          ...match,
+          a: nextInfo.nextSlot === "playerA" ? "offen" : match.a,
+          b: nextInfo.nextSlot === "playerB" ? "offen" : match.b,
+        };
+      }
+
+      return match;
+    });
+
+    setMatches(nextMatches);
+    saveMatches(nextMatches);
+    await publishLiveData(nextMatches, loadPlayers());
+  }
+
   async function resetMatches() {
     localStorage.removeItem(MATCH_STORAGE_KEY);
     resetDraws();
@@ -1301,13 +1335,7 @@ function Admin() {
                                 <button
                                   type="button"
                                   style={{ padding: "8px 6px", fontSize: 11 }}
-                                  onClick={() =>
-                                    updateMatch({
-                                      ...match,
-                                      status: "planned",
-                                      result: "",
-                                    })
-                                  }
+                                  onClick={() => resetResult(match)}
                                 >
                                   <RotateCcw size={14} />
                                   Zurücksetzen

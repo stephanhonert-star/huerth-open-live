@@ -139,7 +139,7 @@ function Statistics({ players, matches }: StatisticsProps) {
 
         <article className="statisticsHighlight">
           <span className="statisticsIcon">⭐</span>
-          <strong>14</strong>
+          <strong>{GERMAN_RANKING_PLAYERS}</strong>
           <small>DR-Spieler</small>
         </article>
       </div>
@@ -201,8 +201,8 @@ function Statistics({ players, matches }: StatisticsProps) {
 
         <article className="statisticsCard">
           <span className="statisticsIcon">📍</span>
-          <strong>110 km</strong>
-          <small>TC Unna 1902 Grün-Weiß · weiteste Anreise</small>
+          <strong>{FARTHEST_DISTANCE_KM} km</strong>
+          <small>{FARTHEST_CLUB} · weiteste Anreise</small>
         </article>
       </div>
     </section>

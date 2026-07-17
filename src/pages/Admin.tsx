@@ -53,6 +53,278 @@ const TOURNAMENT_DATES = [
 
 type StatusFilter = "Alle" | Match["status"];
 
+type DrawImportResult = Awaited<ReturnType<typeof parseDrawFromPdf>>;
+type TournamentDraw = DrawImportResult["draws"][number];
+type TournamentDrawMatch = TournamentDraw["rounds"][number]["matches"][number];
+
+type ImportSummary = {
+  newMatches: number;
+  updatedMatches: number;
+  unchangedMatches: number;
+};
+
+function normalizeMatchText(value: string) {
+  return value.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+function getStableMatchKey(match: Match) {
+  if (match.drawMatchId) {
+    return `draw:${match.drawMatchId}`;
+  }
+
+  const players = [normalizeMatchText(match.a), normalizeMatchText(match.b)]
+    .sort()
+    .join("|");
+
+  return `fallback:${normalizeMatchText(match.competition)}:${players}`;
+}
+
+function mergeImportedMatch(existing: Match, imported: Match): Match {
+  const importedAIsPlaceholder = isPlaceholderName(imported.a);
+  const importedBIsPlaceholder = isPlaceholderName(imported.b);
+  const existingAIsReal = !isPlaceholderName(existing.a);
+  const existingBIsReal = !isPlaceholderName(existing.b);
+
+  return {
+    ...existing,
+    ...imported,
+
+    // Fortschreibung aus bereits gespielten Matches nicht wieder
+    // durch Platzhalter aus einer neu importierten PDF überschreiben.
+    a:
+      importedAIsPlaceholder && existingAIsReal
+        ? existing.a
+        : imported.a,
+    b:
+      importedBIsPlaceholder && existingBIsReal
+        ? existing.b
+        : imported.b,
+
+    // Alles, was während des Turniers manuell geändert oder erfasst wurde,
+    // bleibt bei einem erneuten Import erhalten.
+    time: existing.time,
+    court: existing.court,
+    status: existing.status,
+    since: existing.since,
+    result: existing.result,
+    drawMatchId: imported.drawMatchId || existing.drawMatchId,
+  };
+}
+
+function mergeMatches(
+  existingMatches: Match[],
+  importedMatches: Match[],
+): { matches: Match[]; summary: ImportSummary } {
+  const nextMatches = [...existingMatches];
+  const indexByKey = new Map<string, number>();
+
+  nextMatches.forEach((match, index) => {
+    indexByKey.set(getStableMatchKey(match), index);
+  });
+
+  let newMatches = 0;
+  let updatedMatches = 0;
+  let unchangedMatches = 0;
+
+  importedMatches.forEach((importedMatch) => {
+    const key = getStableMatchKey(importedMatch);
+    const existingIndex = indexByKey.get(key);
+
+    if (existingIndex === undefined) {
+      indexByKey.set(key, nextMatches.length);
+      nextMatches.push(importedMatch);
+      newMatches += 1;
+      return;
+    }
+
+    const existingMatch = nextMatches[existingIndex];
+    const mergedMatch = mergeImportedMatch(existingMatch, importedMatch);
+
+    if (JSON.stringify(existingMatch) === JSON.stringify(mergedMatch)) {
+      unchangedMatches += 1;
+    } else {
+      updatedMatches += 1;
+    }
+
+    nextMatches[existingIndex] = mergedMatch;
+  });
+
+  return {
+    matches: nextMatches,
+    summary: {
+      newMatches,
+      updatedMatches,
+      unchangedMatches,
+    },
+  };
+}
+
+function mergePlayers(
+  existingPlayers: Player[],
+  importedPlayers: Player[],
+): Player[] {
+  const nextPlayers = [...existingPlayers];
+  const indexByKey = new Map<string, number>();
+
+  nextPlayers.forEach((player, index) => {
+    const key = `${normalizeMatchText(player.name)}|${normalizeMatchText(
+      player.competition,
+    )}`;
+
+    indexByKey.set(key, index);
+  });
+
+  importedPlayers.forEach((importedPlayer) => {
+    const key = `${normalizeMatchText(
+      importedPlayer.name,
+    )}|${normalizeMatchText(importedPlayer.competition)}`;
+
+    const existingIndex = indexByKey.get(key);
+
+    if (existingIndex === undefined) {
+      indexByKey.set(key, nextPlayers.length);
+      nextPlayers.push(importedPlayer);
+      return;
+    }
+
+    const existingPlayer = nextPlayers[existingIndex];
+
+    nextPlayers[existingIndex] = {
+      ...existingPlayer,
+      ...importedPlayer,
+      club:
+        importedPlayer.club &&
+        importedPlayer.club !== "Unbekannter Verein"
+          ? importedPlayer.club
+          : existingPlayer.club,
+      lk:
+        importedPlayer.lk && importedPlayer.lk !== "-"
+          ? importedPlayer.lk
+          : existingPlayer.lk,
+      year:
+        importedPlayer.year && importedPlayer.year !== "-"
+          ? importedPlayer.year
+          : existingPlayer.year,
+    };
+  });
+
+  return nextPlayers;
+}
+
+function preserveDrawMatchFields(
+  importedMatch: TournamentDrawMatch,
+  existingMatch: TournamentDrawMatch,
+): TournamentDrawMatch {
+  const importedRecord = importedMatch as unknown as Record<string, unknown>;
+  const existingRecord = existingMatch as unknown as Record<string, unknown>;
+
+  const mergedRecord: Record<string, unknown> = {
+    ...existingRecord,
+    ...importedRecord,
+  };
+
+  [
+    "time",
+    "court",
+    "result",
+    "winner",
+    "status",
+    "since",
+    "completed",
+  ].forEach((key) => {
+    const existingValue = existingRecord[key];
+
+    if (
+      existingValue !== undefined &&
+      existingValue !== null &&
+      existingValue !== ""
+    ) {
+      mergedRecord[key] = existingValue;
+    }
+  });
+
+  const importedPlayerA = importedRecord.playerA as
+    | { name?: string }
+    | undefined;
+  const importedPlayerB = importedRecord.playerB as
+    | { name?: string }
+    | undefined;
+  const existingPlayerA = existingRecord.playerA as
+    | { name?: string }
+    | undefined;
+  const existingPlayerB = existingRecord.playerB as
+    | { name?: string }
+    | undefined;
+
+  if (
+    importedPlayerA?.name &&
+    isPlaceholderName(importedPlayerA.name) &&
+    existingPlayerA?.name &&
+    !isPlaceholderName(existingPlayerA.name)
+  ) {
+    mergedRecord.playerA = existingRecord.playerA;
+  }
+
+  if (
+    importedPlayerB?.name &&
+    isPlaceholderName(importedPlayerB.name) &&
+    existingPlayerB?.name &&
+    !isPlaceholderName(existingPlayerB.name)
+  ) {
+    mergedRecord.playerB = existingRecord.playerB;
+  }
+
+  return mergedRecord as unknown as TournamentDrawMatch;
+}
+
+function mergeDraws(
+  existingDraws: TournamentDraw[],
+  importedDraws: TournamentDraw[],
+): TournamentDraw[] {
+  const nextDraws = [...existingDraws];
+  const drawIndexById = new Map<string, number>();
+
+  nextDraws.forEach((draw, index) => {
+    drawIndexById.set(draw.id, index);
+  });
+
+  importedDraws.forEach((importedDraw) => {
+    const existingIndex = drawIndexById.get(importedDraw.id);
+
+    if (existingIndex === undefined) {
+      drawIndexById.set(importedDraw.id, nextDraws.length);
+      nextDraws.push(importedDraw);
+      return;
+    }
+
+    const existingDraw = nextDraws[existingIndex];
+    const existingMatchesById = new Map<string, TournamentDrawMatch>();
+
+    existingDraw.rounds.forEach((round) => {
+      round.matches.forEach((match) => {
+        existingMatchesById.set(match.id, match);
+      });
+    });
+
+    nextDraws[existingIndex] = {
+      ...existingDraw,
+      ...importedDraw,
+      rounds: importedDraw.rounds.map((round) => ({
+        ...round,
+        matches: round.matches.map((importedMatch) => {
+          const existingMatch = existingMatchesById.get(importedMatch.id);
+
+          return existingMatch
+            ? preserveDrawMatchFields(importedMatch, existingMatch)
+            : importedMatch;
+        }),
+      })),
+    };
+  });
+
+  return nextDraws;
+}
+
 function cleanForFirebase<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
@@ -319,46 +591,39 @@ function Admin() {
 
   async function importDrawPdf(file: File) {
     setLoading(true);
-    setImportMessage("Auslosung wird importiert...");
+    setImportMessage("Auslosung wird importiert und zusammengeführt...");
 
     try {
       const result = await parseDrawFromPdf(file);
       const importedPlayers = createPlayersFromDraw(result);
 
-      const importedDrawIds = new Set(result.draws.map((draw) => draw.id));
-      const importedCompetitions = new Set(
-        result.draws.map((draw) => draw.competition),
-      );
+      const currentDraws = loadDraws();
+      const currentPlayers = loadPlayers();
 
-      const existingDraws = loadDraws().filter(
-        (draw) => !importedDrawIds.has(draw.id),
-      );
+      const mergedDraws = mergeDraws(currentDraws, result.draws);
+      const mergedMatchResult = mergeMatches(matches, result.matches);
+      const mergedPlayers = mergePlayers(currentPlayers, importedPlayers);
 
-      const existingMatches = matches.filter(
-        (match) => !importedCompetitions.has(match.competition),
-      );
+      saveDraws(mergedDraws);
+      setMatches(mergedMatchResult.matches);
+      saveMatches(mergedMatchResult.matches);
+      savePlayers(mergedPlayers);
 
-      const existingPlayers = loadPlayers().filter(
-        (player) => !importedCompetitions.has(player.competition),
-      );
+      await publishLiveData(mergedMatchResult.matches, mergedPlayers);
 
-      const nextDraws = [...existingDraws, ...result.draws];
-      const nextMatches = [...existingMatches, ...result.matches];
-      const nextPlayers = [...existingPlayers, ...importedPlayers];
-
-      saveDraws(nextDraws);
-      setMatches(nextMatches);
-      saveMatches(nextMatches);
-      savePlayers(nextPlayers);
-
-      await publishLiveData(nextMatches, nextPlayers);
+      const { newMatches, updatedMatches, unchangedMatches } =
+        mergedMatchResult.summary;
 
       setImportMessage(
-        `${result.draws.length} Konkurrenzen importiert · ${importedPlayers.length} Spieler · ${result.matches.length} Spiele`,
+        `${result.draws.length} Konkurrenzen geprüft · ` +
+          `${newMatches} Spiele neu · ` +
+          `${updatedMatches} aktualisiert · ` +
+          `${unchangedMatches} unverändert · ` +
+          `Ergebnisse, Status, Platz und Spielzeit wurden beibehalten`,
       );
     } catch (importError) {
       console.error(importError);
-      setImportMessage("Fehler beim Import der Auslosung");
+      setImportMessage("Fehler beim Zusammenführen der Auslosung");
     } finally {
       setLoading(false);
     }

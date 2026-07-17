@@ -34,9 +34,23 @@ function isRealMatch(match: Match) {
   return !isPlaceholder(match.a) && !isPlaceholder(match.b);
 }
 
+function getDatePart(time: string) {
+  return time.includes(".") ? time.split(" ")[0] : "";
+}
+
+function getTodayDate() {
+  const today = new Date();
+  const day = String(today.getDate()).padStart(2, "0");
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+
+  return `${day}.${month}.`;
+}
+
 function Courts({ matches }: CourtsProps) {
   const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null);
   const [selectedCourt, setSelectedCourt] = useState<number | null>(null);
+
+  const todayDate = getTodayDate();
 
   function playerButton(name: string) {
     return (
@@ -65,6 +79,7 @@ function Courts({ matches }: CourtsProps) {
           .filter((match) => match.court === selectedCourt)
           .filter(isRealMatch)
           .filter((match) => match.status !== "done")
+          .filter((match) => getDatePart(match.time) === todayDate)
           .sort((a, b) => a.time.localeCompare(b.time));
 
   return (
@@ -80,6 +95,7 @@ function Courts({ matches }: CourtsProps) {
           const courtMatches = matches
             .filter((match) => match.court === court)
             .filter(isRealMatch)
+            .filter((match) => getDatePart(match.time) === todayDate)
             .sort((a, b) => a.time.localeCompare(b.time));
 
           const liveMatch = courtMatches.find((match) => match.status === "live");
@@ -131,7 +147,7 @@ function Courts({ matches }: CourtsProps) {
                   <span>
                     {court === 6
                       ? "Nur bei Bedarf eingeplant"
-                      : "Aktuell kein Spiel angesetzt"}
+                      : "Heute kein Spiel angesetzt"}
                   </span>
                 </div>
               )}
@@ -150,7 +166,7 @@ function Courts({ matches }: CourtsProps) {
               ×
             </button>
 
-            <small>Platzübersicht</small>
+            <small>Platzübersicht · {todayDate}</small>
             <h2>Platz {selectedCourt}</h2>
 
             <div className="playerFacts">
@@ -168,7 +184,7 @@ function Courts({ matches }: CourtsProps) {
               ) : (
                 <div>
                   <span>Hinweis</span>
-                  <b>Keine weiteren Spiele angesetzt.</b>
+                  <b>Für heute sind keine weiteren Spiele angesetzt.</b>
                 </div>
               )}
             </div>

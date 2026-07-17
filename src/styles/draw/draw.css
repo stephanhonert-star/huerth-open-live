@@ -1,38 +1,42 @@
 .drawStage {
+  width: 100%;
   overflow-x: auto;
-  padding: 12px 0 26px;
+  overflow-y: visible;
+  padding: 12px 0 34px;
+  scrollbar-width: none;
 }
 
 .drawStage::-webkit-scrollbar {
-  height: 12px;
-}
-
-.drawStage::-webkit-scrollbar-track {
-  background: #111;
-  border-radius: 999px;
-}
-
-.drawStage::-webkit-scrollbar-thumb {
-  background: #666;
-  border-radius: 999px;
+  display: none;
 }
 
 .drawRail {
-  min-width: 1360px;
+  --card-height: 188px;
+  --card-gap: 30px;
+  --header-height: 58px;
+  --tree-height: calc(
+    (var(--max-round-count) * var(--card-height)) +
+      ((var(--max-round-count) - 1) * var(--card-gap))
+  );
+
+  min-width: max-content;
   display: flex;
-  gap: 46px;
   align-items: flex-start;
-  padding: 8px 6px 28px;
+  gap: 46px;
+  padding: 8px 6px 34px;
 }
 
 .drawColumn {
   width: 310px;
   flex: 0 0 310px;
   display: grid;
+  grid-template-rows: var(--header-height) var(--tree-height);
   gap: 20px;
 }
 
 .drawColumnHead {
+  min-height: var(--header-height);
+  box-sizing: border-box;
   background: linear-gradient(135deg, #d1113f, #a9082d);
   color: white;
   border-radius: 999px;
@@ -45,30 +49,55 @@
   box-shadow: 0 14px 34px rgba(184, 15, 47, 0.28);
 }
 
+.drawColumnHead b {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .drawColumnHead span {
+  flex: 0 0 auto;
   font-size: 12px;
   opacity: 0.92;
 }
 
 .drawColumnBody {
-  display: grid;
-  gap: 30px;
+  position: relative;
+  width: 100%;
+  height: var(--tree-height);
+}
+
+.drawMatchSlot {
+  position: absolute;
+  top: var(--match-position);
+  left: 0;
+  right: 0;
+  transform: translateY(-50%);
 }
 
 .drawCard {
   position: relative;
   width: 100%;
+  box-sizing: border-box;
   text-align: left;
   border: 1px solid #353535;
-  background: linear-gradient(135deg, rgba(30, 30, 30, 0.98), rgba(10, 10, 10, 0.98));
+  background: linear-gradient(
+    135deg,
+    rgba(30, 30, 30, 0.98),
+    rgba(10, 10, 10, 0.98)
+  );
   border-radius: 26px;
   padding: 16px;
   display: grid;
   gap: 10px;
-  min-height: 188px;
+  min-height: var(--card-height);
   cursor: pointer;
   box-shadow: 0 20px 46px rgba(0, 0, 0, 0.45);
   color: white;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease;
 }
 
 .drawCard::before {
@@ -112,7 +141,7 @@
   border-radius: 16px;
   padding: 12px;
   display: grid;
-  grid-template-columns: 34px 1fr 42px;
+  grid-template-columns: 34px minmax(0, 1fr) 42px;
   gap: 8px;
   align-items: center;
 }
@@ -124,8 +153,10 @@
 }
 
 .drawPlayerLine strong {
+  min-width: 0;
   color: white;
   font-size: 16px;
+  overflow-wrap: anywhere;
 }
 
 .drawPlayerLine em {
@@ -156,18 +187,23 @@
   top: 50%;
   width: 46px;
   height: 2px;
-  background: linear-gradient(90deg, var(--red), rgba(184, 15, 47, 0.15));
+  background: linear-gradient(
+    90deg,
+    var(--red),
+    rgba(184, 15, 47, 0.25)
+  );
 }
 
 .drawConnector::after {
   content: "";
   position: absolute;
-  right: 0;
-  top: -28px;
-  width: 2px;
-  height: 58px;
-  background: rgba(184, 15, 47, 0.65);
-  border-radius: 999px;
+  right: -4px;
+  top: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--red);
+  box-shadow: 0 0 12px rgba(184, 15, 47, 0.7);
 }
 
 .drawThirdCard {
@@ -219,15 +255,28 @@
 }
 
 .drawWinnerCard {
-  min-height: 310px;
+  width: 100%;
+  min-height: 360px;
+  box-sizing: border-box;
   background:
-    radial-gradient(circle at center, rgba(255, 210, 80, 0.18), transparent 12rem),
-    linear-gradient(135deg, rgba(20, 20, 20, 0.98), rgba(10, 10, 10, 0.98));
+    radial-gradient(
+      circle at center,
+      rgba(255, 210, 80, 0.18),
+      transparent 12rem
+    ),
+    linear-gradient(
+      135deg,
+      rgba(20, 20, 20, 0.98),
+      rgba(10, 10, 10, 0.98)
+    );
   border: 1px solid #18a957;
   border-radius: 28px;
-  padding: 24px;
-  display: grid;
-  place-items: center;
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
   text-align: center;
   box-shadow:
     0 0 36px rgba(24, 169, 87, 0.16),
@@ -235,6 +284,7 @@
 }
 
 .drawWinnerCard small {
+  margin: 0;
   color: #80ffad;
   font-weight: 950;
   text-transform: uppercase;
@@ -242,7 +292,10 @@
 }
 
 .drawWinnerTrophy {
-  font-size: 84px;
+  display: block;
+  margin: 0;
+  font-size: 76px;
+  line-height: 1;
   filter: drop-shadow(0 0 18px rgba(255, 210, 80, 0.32));
 }
 
@@ -250,80 +303,23 @@
   margin: 0;
   color: white;
   font-size: 26px;
+  line-height: 1.1;
 }
 
 .drawWinnerCard p {
   margin: 0;
   color: #f3c84d;
   font-weight: 950;
+  line-height: 1.25;
 }
 
 .drawWinnerCard span {
+  margin: 0;
   color: var(--muted);
   font-weight: 800;
+  line-height: 1.25;
 }
 
-@media (max-width: 650px) {
-  .drawRail {
-    min-width: 1220px;
-    gap: 34px;
-  }
-
-  .drawColumn {
-    width: 270px;
-    flex-basis: 270px;
-  }
-
-  .drawFinalColumn,
-  .drawWinnerColumn {
-    width: 300px;
-    flex-basis: 300px;
-  }
-}
-.drawStage {
-  scrollbar-width: none;
-}
-
-.drawStage::-webkit-scrollbar {
-  display: none;
-}
-
-.drawFixedScroll {
-  position: fixed;
-  left: 50%;
-  bottom: 102px;
-  transform: translateX(-50%);
-  width: min(720px, calc(100% - 34px));
-  z-index: 90;
-  background: rgba(18, 18, 18, 0.96);
-  border: 1px solid #303030;
-  border-radius: 999px;
-  padding: 8px;
-  display: grid;
-  grid-template-columns: 48px 1fr 48px;
-  gap: 8px;
-  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.55);
-}
-
-.drawFixedScroll button {
-  border: 0;
-  border-radius: 999px;
-  background: var(--red);
-  color: white;
-  font-weight: 950;
-  cursor: pointer;
-}
-
-.drawScrollHint {
-  background: #050505;
-  border: 1px solid #303030;
-  border-radius: 999px;
-  display: grid;
-  place-items: center;
-  color: var(--muted);
-  font-weight: 900;
-  font-size: 13px;
-}
 .drawControls {
   background: rgba(18, 18, 18, 0.98);
   border: 1px solid #303030;
@@ -377,7 +373,11 @@
 }
 
 .drawTitleCard {
-  background: linear-gradient(135deg, rgba(20,20,20,.98), rgba(55,20,28,.98));
+  background: linear-gradient(
+    135deg,
+    rgba(20, 20, 20, 0.98),
+    rgba(55, 20, 28, 0.98)
+  );
   border: 1px solid #353535;
   border-radius: 30px;
   padding: 22px;
@@ -431,4 +431,40 @@
   color: var(--muted);
   font-weight: 900;
   font-size: 13px;
+}
+
+@media (max-width: 650px) {
+  .drawRail {
+    --card-height: 178px;
+    --card-gap: 24px;
+    gap: 34px;
+  }
+
+  .drawColumn {
+    width: 270px;
+    flex-basis: 270px;
+  }
+
+  .drawFinalColumn,
+  .drawWinnerColumn {
+    width: 300px;
+    flex-basis: 300px;
+  }
+
+  .drawWinnerCard {
+    min-height: 330px;
+    padding: 24px 20px;
+  }
+
+  .drawWinnerTrophy {
+    font-size: 68px;
+  }
+
+  .drawWinnerCard h3 {
+    font-size: 23px;
+  }
+
+  .drawFixedScroll {
+    bottom: 104px;
+  }
 }

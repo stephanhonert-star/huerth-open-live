@@ -1225,8 +1225,8 @@ function Admin() {
                     <div
                       style={{
                         display: "grid",
-                        gap: 8,
-                        gridTemplateRows: `repeat(${visibleTimeSlots.length}, minmax(280px, auto))`,
+                        rowGap: 18,
+                        gridTemplateRows: `repeat(${visibleTimeSlots.length}, 390px)`,
                       }}
                     >
                       {courtMatches.map((match) => {

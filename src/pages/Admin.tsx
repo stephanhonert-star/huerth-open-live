@@ -53,6 +53,7 @@ const TOURNAMENT_DATES = [
 ];
 
 type StatusFilter = "Alle" | Match["status"];
+type AdminMatchView = "open" | "done";
 
 type DrawImportResult = Awaited<ReturnType<typeof parseDrawFromPdf>>;
 type TournamentDraw = DrawImportResult["draws"][number];
@@ -505,6 +506,7 @@ function Admin() {
   const [selectedDate, setSelectedDate] = useState("Alle");
   const [selectedCourt, setSelectedCourt] = useState("Alle");
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("Alle");
+  const [adminMatchView, setAdminMatchView] = useState<AdminMatchView>("open");
   const [importMessage, setImportMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [editingMatchId, setEditingMatchId] = useState<string | null>(null);
@@ -746,6 +748,7 @@ function Admin() {
     setSelectedDate("Alle");
     setSelectedCourt("Alle");
     setSelectedStatus("Alle");
+    setAdminMatchView("open");
     window.dispatchEvent(new Event("huerthOpenMatchesUpdated"));
     await publishLiveData(defaultMatches, loadPlayers());
   }
@@ -765,6 +768,7 @@ function Admin() {
     setSelectedDate("Alle");
     setSelectedCourt("Alle");
     setSelectedStatus("Alle");
+    setAdminMatchView("open");
 
     window.dispatchEvent(new Event("huerthOpenMatchesUpdated"));
     window.dispatchEvent(new Event("huerthOpenPlayersUpdated"));
@@ -816,14 +820,27 @@ function Admin() {
       const matchesCourt =
         selectedCourt === "Alle" || String(match.court) === selectedCourt;
 
+      const matchesView =
+        adminMatchView === "done"
+          ? match.status === "done"
+          : match.status !== "done";
+
       const matchesStatus =
         selectedStatus === "Alle" || match.status === selectedStatus;
 
       return (
-        hasRealPlayers(match) && matchesDate && matchesCourt && matchesStatus
+        hasRealPlayers(match) &&
+        matchesDate &&
+        matchesCourt &&
+        matchesView &&
+        matchesStatus
       );
     }),
   );
+
+  const visibleTimeSlots = Array.from(
+    new Set(filteredMatches.map((match) => match.time || "Noch nicht terminiert")),
+  ).sort((a, b) => timeSortValue(a) - timeSortValue(b));
 
   return (
     <div
@@ -1029,13 +1046,71 @@ function Admin() {
                 setSelectedStatus(event.target.value as StatusFilter)
               }
             >
-              <option value="Alle">Alle Status</option>
-              <option value="planned">Geplant</option>
-              <option value="live">Live</option>
-              <option value="done">Beendet</option>
+              {adminMatchView === "open" ? (
+                <>
+                  <option value="Alle">Geplant &amp; live</option>
+                  <option value="planned">Nur geplant</option>
+                  <option value="live">Nur live</option>
+                </>
+              ) : (
+                <option value="Alle">Beendete Spiele</option>
+              )}
             </select>
           </label>
         </div>
+      </section>
+
+      <section
+        style={{
+          display: "flex",
+          gap: 10,
+          flexWrap: "wrap",
+          marginBottom: 18,
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => {
+            setAdminMatchView("open");
+            setSelectedStatus("Alle");
+          }}
+          style={{
+            border:
+              adminMatchView === "open"
+                ? "1px solid #d50b3d"
+                : "1px solid #333",
+            borderRadius: 999,
+            padding: "11px 18px",
+            background: adminMatchView === "open" ? "#d50b3d" : "#151515",
+            color: "white",
+            fontWeight: 950,
+            cursor: "pointer",
+          }}
+        >
+          Offen &amp; live ({plannedMatches.length + liveMatches.length})
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setAdminMatchView("done");
+            setSelectedStatus("Alle");
+          }}
+          style={{
+            border:
+              adminMatchView === "done"
+                ? "1px solid #d50b3d"
+                : "1px solid #333",
+            borderRadius: 999,
+            padding: "11px 18px",
+            background: adminMatchView === "done" ? "#d50b3d" : "#151515",
+            color: "white",
+            fontWeight: 950,
+            cursor: "pointer",
+          }}
+        >
+          Beendet ({doneMatches.length})
+        </button>
       </section>
 
       <section className="adminSection" style={{ width: "100%", margin: 0 }}>
@@ -1147,7 +1222,13 @@ function Admin() {
                       Keine Spiele
                     </div>
                   ) : (
-                    <div style={{ display: "grid", gap: 8 }}>
+                    <div
+                      style={{
+                        display: "grid",
+                        gap: 8,
+                        gridTemplateRows: `repeat(${visibleTimeSlots.length}, minmax(280px, auto))`,
+                      }}
+                    >
                       {courtMatches.map((match) => {
                         const matchKey = getMatchKey(match);
                         const isEditing = editingMatchId === matchKey;
@@ -1160,6 +1241,10 @@ function Admin() {
                               padding: 10,
                               borderRadius: 15,
                               minWidth: 0,
+                              gridRow:
+                                visibleTimeSlots.indexOf(
+                                  match.time || "Noch nicht terminiert",
+                                ) + 1,
                             }}
                           >
                             <div className="adminMatchTop">

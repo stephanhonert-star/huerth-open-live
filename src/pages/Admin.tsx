@@ -842,6 +842,18 @@ function Admin() {
     new Set(filteredMatches.map((match) => match.time || "Noch nicht terminiert")),
   ).sort((a, b) => timeSortValue(a) - timeSortValue(b));
 
+  const editingMatch = filteredMatches.find(
+    (match) => getMatchKey(match) === editingMatchId,
+  );
+
+  const editingTimeSlot = editingMatch
+    ? editingMatch.time || "Noch nicht terminiert"
+    : null;
+
+  const timeSlotRows = visibleTimeSlots
+    .map((timeSlot) => (timeSlot === editingTimeSlot ? "690px" : "390px"))
+    .join(" ");
+
   return (
     <div
       style={{
@@ -1226,7 +1238,7 @@ function Admin() {
                       style={{
                         display: "grid",
                         rowGap: 18,
-                        gridTemplateRows: `repeat(${visibleTimeSlots.length}, 390px)`,
+                        gridTemplateRows: timeSlotRows,
                       }}
                     >
                       {courtMatches.map((match) => {
@@ -1245,6 +1257,9 @@ function Admin() {
                                 visibleTimeSlots.indexOf(
                                   match.time || "Noch nicht terminiert",
                                 ) + 1,
+                              alignSelf: "start",
+                              position: "relative",
+                              zIndex: isEditing ? 20 : 1,
                             }}
                           >
                             <div className="adminMatchTop">

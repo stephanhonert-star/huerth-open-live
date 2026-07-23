@@ -102,9 +102,9 @@ function mergeImportedMatch(existing: Match, imported: Match): Match {
         ? existing.b
         : imported.b,
 
-    // Alles, was während des Turniers manuell geändert oder erfasst wurde,
-    // bleibt bei einem erneuten Import erhalten.
-    time: existing.time,
+    // Neue Termine aus der aktualisierten PDF übernehmen.
+    // Manuell gesetzte Plätze sowie Ergebnis und Status bleiben erhalten.
+    time: imported.time || existing.time,
     court: existing.court,
     status: existing.status,
     since: existing.since,
@@ -226,7 +226,6 @@ function preserveDrawMatchFields(
   };
 
   [
-    "time",
     "court",
     "result",
     "winner",
@@ -622,7 +621,7 @@ function Admin() {
           `${newMatches} Spiele neu · ` +
           `${updatedMatches} aktualisiert · ` +
           `${unchangedMatches} unverändert · ` +
-          `Ergebnisse, Status, Platz und Spielzeit wurden beibehalten`,
+          `Neue Termine übernommen · Ergebnisse, Status und Plätze beibehalten`,
       );
     } catch (importError) {
       console.error(importError);
